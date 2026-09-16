@@ -1,0 +1,341 @@
+{
+  "title": "Deployment — демо-сценарий",
+  "module": "SNP",
+  "map": "snp",
+  "blocks": [
+    {
+      "title": "Расчёт планов дистрибуции",
+      "steps": [
+        {
+          "id": "1.1",
+          "title": "Сеть задана справочниками",
+          "action": "Показать узлы сети: заводы, DC, RDC и каналы отгрузки.",
+          "screen": "Справочники сети",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/platform/metadata/network",
+          "value": "Модель вашей сети живёт в справочниках, а не в формулах Excel: поменяли узел или маршрут один раз — и все расчёты идут по новой сети.",
+          "result": "",
+          "comment": "",
+          "node": "transportnye-otnosheniya"
+        },
+        {
+          "id": "1.2",
+          "title": "Спрос: заказы вытесняют прогноз",
+          "action": "Показать неделю, где подтверждённые заказы вытеснили прогноз.",
+          "screen": "Демандпланирование: заказы и прогноз",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/demand/orders-vs-forecast",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "otkrytye-zakazy-klientov-6-105"
+        },
+        {
+          "id": "1.3",
+          "title": "Запас партиями и страховой запас × 2",
+          "action": "Открыть политику запаса по SKU и изменить множитель страхового запаса на 2.",
+          "screen": "Параметры запаса",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/inventory/policies",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "urovni-sz"
+        },
+        {
+          "id": "1.4",
+          "title": "Вход: план производства из SNP",
+          "action": "Показать, что план производства приходит на вход расчёту дистрибуции.",
+          "screen": "План производства (SNP)",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/production-plan",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "operativnyy-plan-proizvodstva-6-105"
+        },
+        {
+          "id": "1.5",
+          "title": "Запуск расчёта, профиль 106",
+          "action": "Запустить расчёт дистрибуции по профилю 106 и показать статус процесса.",
+          "screen": "Менеджер процессов",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/platform/process-manager",
+          "value": "Расчёт запускается как процесс с профилем настроек: результат воспроизводим, видно кто, когда и с какими параметрами считал.",
+          "result": "",
+          "comment": "",
+          "node": "raschet-plana-popolneniya-raspredeleniya-deployment"
+        },
+        {
+          "id": "1.6",
+          "title": "Результат: заявки на перемещение",
+          "action": "Показать полученные заявки на перемещение по маршрутам и неделям.",
+          "screen": "Заявки на перемещение (STR)",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/str",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "plan-popolneniya-po-dnyam"
+        },
+        {
+          "id": "1.7",
+          "title": "Книга ↔ заявки в обе стороны",
+          "action": "Перейти из книги в заявку и обратно.",
+          "screen": "Книга дистрибуции",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/distribution-book",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "korrektirovki-rekomendaciy-zayavok-na-peremeschenie"
+        },
+        {
+          "id": "1.8",
+          "title": "Переключение источника с завода 1 на завод 2",
+          "action": "Сменить источник по маршруту с PLANT_1 на PLANT_2 и пересчитать.",
+          "screen": "Источники поставки",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/sourcing",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "istochniki-postavki"
+        },
+        {
+          "id": "1.9",
+          "title": "Лид-тайм и срок годности в пути",
+          "action": "Показать лид-тайм маршрута и остаток срока годности на приёмке.",
+          "screen": "Параметры транспортировки",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/lanes",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "lid-taym-transportirovki"
+        },
+        {
+          "id": "1.10",
+          "title": "Трассировка: почему появился этот STR",
+          "action": "Открыть трассировку от заказа клиента FED_1 вниз до партии на заводе PLANT_1.",
+          "screen": "Трассировка (пеггинг)",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/pegging?order=FED_1",
+          "value": "Вы всегда видите, почему система предложила эту отгрузку: от заказа вашего клиента до конкретной партии на заводе. Решение не «чёрный ящик» — его можно проверить и объяснить коммерции.",
+          "result": "Цепочка: заказ FED_1 → заявка DC_CENTER→RDC_MSK → заявка PLANT_1→DC_CENTER → партия B-0712.",
+          "comment": "",
+          "node": "raschet-plana-popolneniya-raspredeleniya-deployment"
+        },
+        {
+          "id": "1.11",
+          "title": "Ограничение транспорта",
+          "action": "Задать лимит по маршруту и показать, как расчёт перераспределил объём.",
+          "screen": "Ограничения транспорта",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/transport-limits",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "ogranicheniya-po-propusknoy-sposobnosti"
+        }
+      ]
+    },
+    {
+      "title": "Квоты и распределение дефицита",
+      "steps": [
+        {
+          "id": "2.1",
+          "title": "Дефицит на неделе 3",
+          "action": "Показать неделю 3 с непокрытым спросом.",
+          "screen": "Дефицит: сводка по неделям",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/shortage",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "raschet-planovogo-ostatka-0-i-formirovanie-preduprezhdeniya"
+        },
+        {
+          "id": "2.2",
+          "title": "Приоритеты заказов",
+          "action": "Показать приоритет заказов, по которому распределяется дефицит.",
+          "screen": "Приоритеты заказов",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/order-priority",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "aktualnye-prioritety"
+        },
+        {
+          "id": "2.3",
+          "title": "Бизнес-правила приоритетов",
+          "action": "Проговорить, как приоритет собирается из атрибутов клиента и канала.",
+          "screen": "Бизнес-правила приоритетов",
+          "url": "",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "aktualnye-parametry-i-prioritety-prioritety-kvoty-parametry-popolneniya"
+        },
+        {
+          "id": "2.4",
+          "title": "Федеральные покрыты 100 %",
+          "action": "Показать, что заказы федеральных сетей покрыты полностью.",
+          "screen": "Покрытие федеральных сетей",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/coverage?channel=FED",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "rezervy-allokaciya"
+        },
+        {
+          "id": "2.5",
+          "title": "Fair share внутри канала",
+          "action": "Показать пропорциональное распределение остатка внутри канала.",
+          "screen": "Fair share по каналу",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/fair-share",
+          "value": "Дефицит делится по вашим правилам, а не вручную: клиенты одного канала получают сопоставимую долю, и это решение можно показать каждому из них.",
+          "result": "",
+          "comment": "",
+          "node": "raschet-plana-popolneniya-raspredeleniya-deployment"
+        },
+        {
+          "id": "2.6",
+          "title": "Исключение из дележа",
+          "action": "Вывести клиента из общего дележа и пересчитать распределение.",
+          "screen": "Исключения из распределения",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/fair-share/exceptions",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": ""
+        },
+        {
+          "id": "2.7",
+          "title": "Квоты заводов 60/40",
+          "action": "Задать квоты PLANT_1 / PLANT_2 60/40 и показать результат.",
+          "screen": "Квоты заводов",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/plant-quotas",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "raschet-neogranichennoy-potrebnosti-v-proizvodstve-po-kvotam"
+        },
+        {
+          "id": "2.8",
+          "title": "Объёмный лимит на канал",
+          "action": "Ограничить объём по каналу и показать перераспределение.",
+          "screen": "Лимиты по каналам",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/channel-limits",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "ogranicheniya-po-propusknoy-sposobnosti"
+        },
+        {
+          "id": "2.9",
+          "title": "Блокировка партии",
+          "action": "Заблокировать партию B-0712 и пересчитать покрытие.",
+          "screen": "Блокировка партии",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/batch-block",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "min-partii-na-transportirovku-i-kratnosti"
+        },
+        {
+          "id": "2.10",
+          "title": "Директивное решение планировщика",
+          "action": "Переопределить распределение вручную и зафиксировать причину.",
+          "screen": "Директивное решение",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/manual-allocation",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "korrektirovka-plana-peremescheniy"
+        },
+        {
+          "id": "2.11",
+          "title": "Алерты по нарушениям",
+          "action": "Проговорить, какие нарушения квот и приоритетов попадают в алерты.",
+          "screen": "Алерты по распределению",
+          "url": "",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "analiz-preduprezhdeniy"
+        }
+      ]
+    },
+    {
+      "title": "Мониторинг, сценарии, интеграция",
+      "steps": [
+        {
+          "id": "3.1",
+          "title": "Две версии: ПРР хватает / −40 %",
+          "action": "Сравнить две версии сценария по доступности ПРР.",
+          "screen": "Сценарии и версии",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/platform/scenarios",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "scenarii"
+        },
+        {
+          "id": "3.2",
+          "title": "ПРР — узкое место",
+          "action": "Показать загрузку ПРР выше 100 % на неделях 4–6.",
+          "screen": "Загрузка ПРР",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/capacity/handling",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "ogranicheniya-resursov-po-personalu"
+        },
+        {
+          "id": "3.3",
+          "title": "Алерты по ресурсам",
+          "action": "Проговорить состав алертов по перегрузке ресурсов.",
+          "screen": "Алерты по ресурсам",
+          "url": "",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "analiz-preduprezhdeniy"
+        },
+        {
+          "id": "3.4",
+          "title": "What-if: блокировка завода",
+          "action": "Создать сценарий с остановкой PLANT_1 и сравнить с базовым.",
+          "screen": "What-if: блокировка завода",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/platform/scenarios/what-if",
+          "value": "Проверка «что если» делается на копии данных: вы видите последствия решения до того, как оно повлияло на план.",
+          "result": "",
+          "comment": "",
+          "node": "sozdanie-scenariya"
+        },
+        {
+          "id": "3.5",
+          "title": "KPI-дашборд",
+          "action": "Показать уровень сервиса, запасы и загрузку ресурсов по версиям.",
+          "screen": "KPI-дашборд",
+          "url": "https://front-prod.k8s.demo5.in-plan.ru/snp/kpi",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": ""
+        },
+        {
+          "id": "3.6",
+          "title": "Цикл с TMS / WMS",
+          "action": "Проговорить обмен заявками и фактом с TMS и WMS.",
+          "screen": "Интеграция TMS / WMS",
+          "url": "",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": "publikaciya-zayavok-na-peremeschenie"
+        },
+        {
+          "id": "3.7",
+          "title": "TLB",
+          "action": "Проговорить передачу заявок в транспортное планирование.",
+          "screen": "TLB",
+          "url": "",
+          "value": "",
+          "result": "",
+          "comment": "",
+          "node": ""
+        }
+      ]
+    }
+  ]
+}

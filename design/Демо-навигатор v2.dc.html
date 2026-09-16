@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/tokens/colors.css">
+<link rel="stylesheet" href="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/tokens/typography.css">
+<link rel="stylesheet" href="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/tokens/components.css">
+<link rel="stylesheet" href="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/tokens/base.css">
+<link rel="stylesheet" href="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/styles.css">
+<script src="_ds/in-plan-design-system-0a4cef78-5df6-4fd2-bc6c-d78cf7f52bbb/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: #f5f6f8; font-family: "Open Sans", sans-serif; }
+  a { color: #9000ff; }
+  a:hover { color: #6f00ce; }
+</style>
+</helmet>
+<div style="min-height:640px; background:#f5f6f8; font-family:'Open Sans',sans-serif; color:#212529; font-size:14px; line-height:20px; display:flex; flex-direction:column">
+
+  <header style="height:56px; flex:0 0 56px; background:#ffffff; border-bottom:1px solid #eaeaea; display:flex; align-items:center; gap:16px; padding:0 24px">
+    <sc-if value="{{ loaded }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; align-items:center; gap:8px; min-width:0">
+        <span style="font-size:14px; color:#212529; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">Deployment — IBP Digital</span>
+        <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Badge" hint-size="48px,24px" dc-props="{{ badgeProps }}">SNP</x-import>
+      </div>
+    </sc-if>
+    <div style="flex:1"></div>
+    <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="180px,40px" color="primary" modifier="stroked" size="md" on-click="{{ openModal }}">
+      <span style="display:inline-flex; align-items:center; gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path></svg>
+        Загрузить из Excel
+      </span>
+    </x-import>
+  </header>
+
+  <sc-if value="{{ loaded }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1; display:flex; flex-direction:column; min-height:0">
+
+      <section style="background:#ffffff; border-bottom:1px solid #eaeaea; padding:20px 24px 24px">
+        <div style="display:flex; align-items:baseline; gap:16px; padding-bottom:16px">
+          <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Схема сценария</div>
+          <div style="flex:1"></div>
+          <div style="font-size:12px; line-height:16px; color:#77787a">{{ footerText }}</div>
+        </div>
+        <div style="display:flex; align-items:stretch; gap:0; overflow-x:auto">
+          <sc-for list="{{ blocks }}" as="block" hint-placeholder-count="3">
+            <div style="display:flex; align-items:stretch; min-width:0; flex:1 1 0">
+              <div style="{{ block.connectorStyle }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bfbfc1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+              </div>
+              <div style="flex:1 1 0; min-width:220px; border:1px solid #eaeaea; border-radius:8px; padding:12px 12px 8px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:center; gap:8px">
+                  <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:4px; background:#f4e3ff; color:#6f00ce; font-size:12px; font-weight:700">{{ block.n }}</span>
+                  <span style="font-size:13px; line-height:18px; font-weight:600; flex:1; min-width:0; text-wrap:pretty">{{ block.title }}</span>
+                  <span style="font-size:12px; color:#949598; flex:0 0 auto">{{ block.count }}</span>
+                </div>
+                <div style="position:relative; padding-left:0">
+                  <div style="position:absolute; left:6px; top:14px; bottom:14px; width:1px; background:#eaeaea"></div>
+                  <sc-for list="{{ block.steps }}" as="step" hint-placeholder-count="6">
+                    <button type="button" onClick="{{ step.select }}" title="{{ step.t }}" style="{{ step.nodeStyle }}">
+                      <span style="{{ step.dotStyle }}"></span>
+                      <span style="{{ step.numStyle }}">{{ step.id }}</span>
+                      <span style="flex:1; min-width:0; white-space:normal; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden">{{ step.t }}</span>
+                      <sc-if value="{{ step.hasLink }}" hint-placeholder-val="{{ true }}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#bfbfc1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path></svg>
+                      </sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <main style="flex:1; min-width:0; padding:32px; overflow:auto">
+        <div style="max-width:840px; background:#ffffff; border:1px solid #eaeaea; border-radius:8px; padding:24px">
+
+          <div style="display:flex; align-items:flex-start; gap:16px; border-bottom:1px solid #eaeaea; padding-bottom:16px">
+            <div style="flex:1; min-width:0">
+              <div style="font-size:12px; line-height:16px; color:#77787a">{{ activeMeta }}</div>
+              <h1 style="margin:6px 0 0; font-size:24px; line-height:32px; font-weight:600; text-wrap:pretty">{{ active.t }}</h1>
+            </div>
+            <div style="display:flex; gap:8px; flex:0 0 auto">
+              <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="40px,40px" color="neutral" modifier="icon-stroked" size="md" title="Предыдущий шаг" on-click="{{ prev }}" disabled="{{ atFirst }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+              </x-import>
+              <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="40px,40px" color="neutral" modifier="icon-stroked" size="md" title="Следующий шаг" on-click="{{ next }}" disabled="{{ atLast }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+              </x-import>
+            </div>
+          </div>
+
+          <section style="padding:20px 0; border-bottom:1px solid #eaeaea">
+            <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Экран</div>
+            <sc-if value="{{ active.hasLink }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:10px; display:flex; flex-wrap:wrap; align-items:center; gap:12px">
+                <span style="font-size:14px">{{ active.screen }}</span>
+                <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="170px,40px" color="primary" modifier="flat" size="md" on-click="{{ openScreen }}">
+                  <span style="display:inline-flex; align-items:center; gap:8px">
+                    Открыть экран
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path></svg>
+                  </span>
+                </x-import>
+              </div>
+              <div style="margin-top:8px; font-size:12px; line-height:16px; color:#949598; word-break:break-all">{{ active.url }}</div>
+            </sc-if>
+            <sc-if value="{{ active.noLink }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px; display:flex; flex-wrap:wrap; align-items:baseline; gap:12px">
+                <span style="font-size:14px">{{ active.screen }}</span>
+                <span style="font-size:14px; color:#949598">Экран не указан</span>
+              </div>
+            </sc-if>
+          </section>
+
+          <section style="padding:20px 0; border-bottom:1px solid #eaeaea">
+            <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Карта процесса</div>
+            <sc-if value="{{ pmMapped }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <div style="margin-top:10px; display:flex; flex-wrap:wrap; align-items:center; gap:12px">
+                  <span style="font-size:14px; flex:1; min-width:200px">{{ pmStageTitle }}</span>
+                  <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="180px,40px" color="primary" modifier="stroked" size="md" on-click="{{ pmToggle }}">{{ pmToggleLabel }}</x-import>
+                  <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="200px,40px" color="neutral" modifier="stroked" size="md" on-click="{{ pmOpenTab }}">
+                    <span style="display:inline-flex; align-items:center; gap:8px">
+                      Открыть в новой вкладке
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path></svg>
+                    </span>
+                  </x-import>
+                </div>
+                <div style="margin-top:8px; font-size:12px; line-height:16px; color:#949598; word-break:break-all">Узел: {{ pmNodeId }}</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ pmUnmapped }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px; font-size:14px; color:#949598">Узел процесса не сопоставлен</div>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{ active.action }}" hint-placeholder-val="{{ true }}">
+            <section style="padding:20px 0; border-bottom:1px solid #eaeaea">
+              <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Действие</div>
+              <p style="margin:10px 0 0; font-size:14px; line-height:20px; text-wrap:pretty">{{ active.action }}</p>
+            </section>
+          </sc-if>
+
+          <section style="{{ messageBoxStyle }}">
+            <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#6f00ce">Бизнес ценность</div>
+            <p style="{{ messageTextStyle }}">{{ messageText }}</p>
+          </section>
+
+          <section style="padding:0 0 20px; border-bottom:1px solid #eaeaea">
+            <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Ожидаемый результат</div>
+            <p style="{{ resultTextStyle }}">{{ resultText }}</p>
+          </section>
+
+          <sc-if value="{{ active.comment }}" hint-placeholder-val="{{ false }}">
+            <section style="padding:20px 0 0">
+              <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Комментарий</div>
+              <p style="margin:10px 0 0; font-size:12px; line-height:16px; color:#77787a; text-wrap:pretty">{{ active.comment }}</p>
+            </section>
+          </sc-if>
+
+        </div>
+
+        <sc-if value="{{ pmEmbed }}" hint-placeholder-val="{{ false }}">
+          <section style="margin-top:24px">
+            <div style="display:flex; align-items:baseline; gap:12px; padding-bottom:8px">
+              <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Process Map</div>
+              <div style="font-size:12px; line-height:16px; color:#949598">{{ pmStageTitle }}</div>
+            </div>
+            <div style="overflow-x:auto; border:1px solid #eaeaea; border-radius:8px; background:#ffffff">
+              <iframe src="{{ pmUrl }}" title="In.Plan Process Map" style="display:block; width:100%; min-width:1024px; height:760px; border:0; background:#ffffff"></iframe>
+            </div>
+          </section>
+        </sc-if>
+      </main>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:64px 24px">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#bfbfc1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path></svg>
+        <div style="font-size:16px; line-height:24px; font-weight:600">Загрузите сценарий из Excel</div>
+        <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="190px,40px" color="primary" modifier="flat" size="md" on-click="{{ openModal }}">Загрузить из Excel</x-import>
+        <a href="#" onClick="{{ noop }}" style="font-size:12px; line-height:16px">Скачать шаблон</a>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,.4); display:flex; align-items:flex-start; justify-content:center; padding:48px 24px; overflow:auto; z-index:40">
+      <div style="width:720px; max-width:100%; background:#ffffff; border-radius:8px; box-shadow:0 4px 15px #00000026">
+
+        <div style="display:flex; align-items:center; gap:16px; padding:20px 24px; border-bottom:1px solid #eaeaea">
+          <div style="flex:1; font-size:18px; line-height:24px; font-weight:600">Загрузка из Excel</div>
+          <button type="button" onClick="{{ closeModal }}" title="Закрыть" style="background:transparent; border:0; cursor:pointer; padding:4px; display:inline-flex; color:#77787a">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <div style="padding:24px; display:flex; flex-direction:column; gap:24px">
+
+          <section>
+            <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Шаг 1 · Файл</div>
+            <div onClick="{{ pickFile }}" style="margin-top:12px; border:1px dashed #bfbfc1; border-radius:8px; background:#f5f6f8; padding:24px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="border-color:#9000ff; background:#faf3ff">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#949598" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path></svg>
+              <div style="font-size:14px">{{ dropzoneText }}</div>
+              <div style="font-size:12px; line-height:16px; color:#949598">{{ dropzoneHint }}</div>
+            </div>
+            <div style="margin-top:8px; display:flex; gap:16px; font-size:12px; line-height:16px">
+              <a href="#" onClick="{{ noop }}">Скачать шаблон</a>
+            </div>
+
+            <div style="margin-top:16px; background:#f5f6f8; border-radius:4px; padding:16px; font-size:12px; line-height:18px; color:#444647">
+              <div style="font-weight:600; color:#212529">Схема шаблона</div>
+              <ul style="margin:8px 0 0; padding-left:18px; display:flex; flex-direction:column; gap:4px">
+                <li>один лист = один блок, название листа = название блока;</li>
+                <li>строка 1 — заголовок сценария (необязательно), строка 2 — заголовки колонок: № шага · Шаг · Действие · Экран · Ссылка · Посыл клиенту · Ожидаемый результат · Комментарий;</li>
+                <li>обязательны № шага и Шаг, остальное — по желанию.</li>
+              </ul>
+            </div>
+          </section>
+
+          <sc-if value="{{ hasFile }}" hint-placeholder-val="{{ false }}">
+            <section>
+              <div style="font-size:12px; line-height:16px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#77787a">Шаг 2 · Проверка</div>
+              <div style="margin-top:12px; font-size:14px">{{ checkSummary }}</div>
+
+              <table style="margin-top:12px; width:100%; border-collapse:collapse; font-size:14px; line-height:16px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; font-weight:600; height:36px; padding:0 8px; background:#f8f8f8; border:1px solid #eff1f5">Лист</th>
+                    <th style="text-align:right; font-weight:600; height:36px; padding:0 8px; background:#f8f8f8; border:1px solid #eff1f5; width:120px">Шагов</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ sheets }}" as="sheet" hint-placeholder-count="3">
+                    <tr>
+                      <td style="height:32px; padding:0 8px; border:1px solid #eff1f5">{{ sheet.name }}</td>
+                      <td style="height:32px; padding:0 8px; border:1px solid #eff1f5; text-align:right">{{ sheet.count }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+
+              <table style="margin-top:16px; width:100%; border-collapse:collapse; font-size:14px; line-height:16px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; font-weight:600; height:36px; padding:0 8px; background:#f8f8f8; border:1px solid #eff1f5; width:110px">Уровень</th>
+                    <th style="text-align:left; font-weight:600; height:36px; padding:0 8px; background:#f8f8f8; border:1px solid #eff1f5; width:90px">Лист</th>
+                    <th style="text-align:left; font-weight:600; height:36px; padding:0 8px; background:#f8f8f8; border:1px solid #eff1f5; width:70px">Строка</th>
+                    <th style="text-align:left; font-weight:600; height:36px; padding:0 8px; background:#f8f8f8; border:1px solid #eff1f5">Сообщение</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ report }}" as="row" hint-placeholder-count="4">
+                    <tr>
+                      <td style="height:32px; padding:0 8px; border:1px solid #eff1f5">
+                        <span style="{{ row.levelStyle }}">{{ row.level }}</span>
+                      </td>
+                      <td style="height:32px; padding:0 8px; border:1px solid #eff1f5">{{ row.sheet }}</td>
+                      <td style="height:32px; padding:0 8px; border:1px solid #eff1f5">{{ row.line }}</td>
+                      <td style="padding:8px; border:1px solid #eff1f5">{{ row.msg }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </section>
+          </sc-if>
+        </div>
+
+        <div style="border-top:1px solid #eaeaea; padding:16px 24px; display:flex; align-items:center; gap:16px">
+          <div style="flex:1; font-size:12px; line-height:16px; color:#77787a">{{ submitHint }}</div>
+          <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="110px,40px" color="neutral" modifier="stroked" size="md" on-click="{{ closeModal }}">Отмена</x-import>
+          <x-import component-from-global-scope="InPlanDesignSystem_0a4cef.Button" hint-size="120px,40px" color="primary" modifier="flat" size="md" disabled="{{ submitDisabled }}" on-click="{{ submit }}">Загрузить</x-import>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; left:50%; bottom:32px; transform:translateX(-50%); background:#1f1f20; color:#ffffff; font-size:14px; line-height:20px; padding:12px 20px; border-radius:4px; box-shadow:0 4px 15px #00000026; z-index:50">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startEmpty&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Состояние&quot;},&quot;activeStepId&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;1.10&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Состояние&quot;}}">
+const BASE = 'https://front-prod.k8s.demo5.in-plan.ru';
+
+const BLOCKS = [
+  { n: 1, title: 'Расчёт планов дистрибуции', steps: [
+    { id: '1.1', t: 'Сеть задана справочниками', screen: 'Справочники сети', url: BASE + '/platform/metadata/network', action: 'Показать узлы сети: заводы, DC, RDC и каналы отгрузки.', message: 'Модель вашей сети живёт в справочниках, а не в формулах Excel: поменяли узел или маршрут один раз — и все расчёты идут по новой сети.' },
+    { id: '1.2', t: 'Спрос: заказы вытесняют прогноз', screen: 'Демандпланирование: заказы и прогноз', url: BASE + '/demand/orders-vs-forecast', action: 'Показать неделю, где подтверждённые заказы вытеснили прогноз.' },
+    { id: '1.3', t: 'Запас партиями и страховой запас × 2', screen: 'Параметры запаса', url: BASE + '/inventory/policies', action: 'Открыть политику запаса по SKU и изменить множитель страхового запаса на 2.' },
+    { id: '1.4', t: 'Вход: план производства из SNP', screen: 'План производства (SNP)', url: BASE + '/snp/production-plan', action: 'Показать, что план производства приходит на вход расчёту дистрибуции.' },
+    { id: '1.5', t: 'Запуск расчёта, профиль 106', screen: 'Менеджер процессов', url: BASE + '/platform/process-manager', action: 'Запустить расчёт дистрибуции по профилю 106 и показать статус процесса.', message: 'Расчёт запускается как процесс с профилем настроек: результат воспроизводим, видно кто, когда и с какими параметрами считал.' },
+    { id: '1.6', t: 'Результат: заявки на перемещение', screen: 'Заявки на перемещение (STR)', url: BASE + '/snp/str' , action: 'Показать полученные заявки на перемещение по маршрутам и неделям.' },
+    { id: '1.7', t: 'Книга ↔ заявки в обе стороны', screen: 'Книга дистрибуции', url: BASE + '/snp/distribution-book', action: 'Перейти из книги в заявку и обратно.' },
+    { id: '1.8', t: 'Переключение источника с завода 1 на завод 2', screen: 'Источники поставки', url: BASE + '/snp/sourcing', action: 'Сменить источник по маршруту с PLANT_1 на PLANT_2 и пересчитать.' },
+    { id: '1.9', t: 'Лид-тайм и срок годности в пути', screen: 'Параметры транспортировки', url: BASE + '/snp/lanes', action: 'Показать лид-тайм маршрута и остаток срока годности на приёмке.' },
+    { id: '1.10', t: 'Трассировка: почему появился этот STR', screen: 'Трассировка (пеггинг)', url: BASE + '/snp/pegging?order=FED_1',
+      action: 'Открыть трассировку от заказа клиента FED_1 вниз до партии на заводе PLANT_1.',
+      message: 'Вы всегда видите, почему система предложила эту отгрузку: от заказа вашего клиента до конкретной партии на заводе. Решение не «чёрный ящик» — его можно проверить и объяснить коммерции.',
+      result: 'Цепочка: заказ FED_1 → заявка DC_CENTER→RDC_MSK → заявка PLANT_1→DC_CENTER → партия B-0712.' },
+    { id: '1.11', t: 'Ограничение транспорта', screen: 'Ограничения транспорта', url: BASE + '/snp/transport-limits', action: 'Задать лимит по маршруту и показать, как расчёт перераспределил объём.' }
+  ]},
+  { n: 2, title: 'Квоты и распределение дефицита', steps: [
+    { id: '2.1', t: 'Дефицит на неделе 3', screen: 'Дефицит: сводка по неделям', url: BASE + '/snp/shortage', action: 'Показать неделю 3 с непокрытым спросом.' },
+    { id: '2.2', t: 'Приоритеты заказов', screen: 'Приоритеты заказов', url: BASE + '/snp/order-priority', action: 'Показать приоритет заказов, по которому распределяется дефицит.' },
+    { id: '2.3', t: 'Бизнес-правила приоритетов', screen: 'Бизнес-правила приоритетов', action: 'Проговорить, как приоритет собирается из атрибутов клиента и канала.' },
+    { id: '2.4', t: 'Федеральные покрыты 100 %', screen: 'Покрытие федеральных сетей', url: BASE + '/snp/coverage?channel=FED', action: 'Показать, что заказы федеральных сетей покрыты полностью.' },
+    { id: '2.5', t: 'Fair share внутри канала', screen: 'Fair share по каналу', url: BASE + '/snp/fair-share', action: 'Показать пропорциональное распределение остатка внутри канала.', message: 'Дефицит делится по вашим правилам, а не вручную: клиенты одного канала получают сопоставимую долю, и это решение можно показать каждому из них.' },
+    { id: '2.6', t: 'Исключение из дележа', screen: 'Исключения из распределения', url: BASE + '/snp/fair-share/exceptions', action: 'Вывести клиента из общего дележа и пересчитать распределение.' },
+    { id: '2.7', t: 'Квоты заводов 60/40', screen: 'Квоты заводов', url: BASE + '/snp/plant-quotas', action: 'Задать квоты PLANT_1 / PLANT_2 60/40 и показать результат.' },
+    { id: '2.8', t: 'Объёмный лимит на канал', screen: 'Лимиты по каналам', url: BASE + '/snp/channel-limits', action: 'Ограничить объём по каналу и показать перераспределение.' },
+    { id: '2.9', t: 'Блокировка партии', screen: 'Блокировка партии', url: BASE + '/snp/batch-block', action: 'Заблокировать партию B-0712 и пересчитать покрытие.' },
+    { id: '2.10', t: 'Директивное решение планировщика', screen: 'Директивное решение', url: BASE + '/snp/manual-allocation', action: 'Переопределить распределение вручную и зафиксировать причину.' },
+    { id: '2.11', t: 'Алерты по нарушениям', screen: 'Алерты по распределению', action: 'Проговорить, какие нарушения квот и приоритетов попадают в алерты.' }
+  ]},
+  { n: 3, title: 'Мониторинг, сценарии, интеграция', steps: [
+    { id: '3.1', t: 'Две версии: ПРР хватает / −40 %', screen: 'Сценарии и версии', url: BASE + '/platform/scenarios', action: 'Сравнить две версии сценария по доступности ПРР.' },
+    { id: '3.2', t: 'ПРР — узкое место', screen: 'Загрузка ПРР', url: BASE + '/snp/capacity/handling', action: 'Показать загрузку ПРР выше 100 % на неделях 4–6.' },
+    { id: '3.3', t: 'Алерты по ресурсам', screen: 'Алерты по ресурсам', action: 'Проговорить состав алертов по перегрузке ресурсов.' },
+    { id: '3.4', t: 'What-if: блокировка завода', screen: 'What-if: блокировка завода', url: BASE + '/platform/scenarios/what-if', action: 'Создать сценарий с остановкой PLANT_1 и сравнить с базовым.', message: 'Проверка «что если» делается на копии данных: вы видите последствия решения до того, как оно повлияло на план.' },
+    { id: '3.5', t: 'KPI-дашборд', screen: 'KPI-дашборд', url: BASE + '/snp/kpi', action: 'Показать уровень сервиса, запасы и загрузку ресурсов по версиям.' },
+    { id: '3.6', t: 'Цикл с TMS / WMS', screen: 'Интеграция TMS / WMS', action: 'Проговорить обмен заявками и фактом с TMS и WMS.' },
+    { id: '3.7', t: 'TLB', screen: 'TLB', action: 'Проговорить передачу заявок в транспортное планирование.' }
+  ]}
+];
+
+const SHEETS = BLOCKS.map(b => ({ name: 'Блок ' + b.n + ' · ' + b.title, count: b.steps.length }));
+
+const REPORT_BAD = [
+  { level: 'danger', sheet: 'Блок 2', line: '7', msg: 'Не заполнено поле «Шаг»' },
+  { level: 'warning', sheet: 'Блок 1', line: '12', msg: 'Ссылка начинается с http:// — нужен https' },
+  { level: 'warning', sheet: 'Блок 3', line: '8', msg: 'Нет ссылки на экран' },
+  { level: 'info', sheet: 'Блок 3', line: '—', msg: 'Колонка «Комментарий» не найдена — поле будет пустым' }
+];
+const REPORT_OK = REPORT_BAD.slice(1);
+
+const LEVEL = {
+  danger: { bg: '#ffd6db', fg: '#b81d1d' },
+  warning: { bg: '#fcf0d4', fg: '#9d380f' },
+  info: { bg: '#f5f6f8', fg: '#5a5a5c' }
+};
+
+// Интеграция с приложением Process Map (igordikinov/process-map).
+// Deep-link формата ?stage=<number>&node=<nodeId> — см. src/hooks/useDeepLink.ts;
+// карта SNP выложена на GitHub Pages, ссылки открываются в новой вкладке
+// (src/config.ts: linkTarget '_blank'), встраивание — через iframe.
+const PM_BASE = 'https://igordikinov.github.io/process-map/';
+const PM_STAGES = {
+  2: 'Расчет объемных планов',
+  3: 'Анализ и корректировка результатов / Сценарное планирование',
+  4: 'Расчёт плана пополнения (DRP/Deployment) + Транспортбилдер'
+};
+const PM = {
+  '1.1': [4, 'transportnye-otnosheniya'],
+  '1.2': [4, 'otkrytye-zakazy-klientov-6-105'],
+  '1.3': [4, 'urovni-sz'],
+  '1.4': [4, 'operativnyy-plan-proizvodstva-6-105'],
+  '1.5': [4, 'raschet-plana-popolneniya-raspredeleniya-deployment'],
+  '1.6': [4, 'plan-popolneniya-po-dnyam'],
+  '1.7': [4, 'korrektirovki-rekomendaciy-zayavok-na-peremeschenie'],
+  '1.8': [4, 'istochniki-postavki'],
+  '1.9': [4, 'lid-taym-transportirovki'],
+  '1.10': [4, 'raschet-plana-popolneniya-raspredeleniya-deployment'],
+  '1.11': [4, 'ogranicheniya-po-propusknoy-sposobnosti'],
+  '2.1': [2, 'raschet-planovogo-ostatka-0-i-formirovanie-preduprezhdeniya'],
+  '2.2': [2, 'aktualnye-prioritety'],
+  '2.3': [2, 'aktualnye-parametry-i-prioritety-prioritety-kvoty-parametry-popolneniya'],
+  '2.4': [4, 'rezervy-allokaciya'],
+  '2.5': [4, 'raschet-plana-popolneniya-raspredeleniya'],
+  '2.7': [2, 'raschet-neogranichennoy-potrebnosti-v-proizvodstve-po-kvotam'],
+  '2.8': [4, 'ogranicheniya-po-propusknoy-sposobnosti'],
+  '2.9': [4, 'min-partii-na-transportirovku-i-kratnosti'],
+  '2.10': [3, 'vnesenie-ruchnyh-korrektirovok'],
+  '2.11': [3, 'rabota-s-monitorom-preduprezhdeniy'],
+  '3.1': [3, 'scenarii'],
+  '3.2': [4, 'ogranicheniya-resursov-po-personalu'],
+  '3.3': [3, 'analiz-preduprezhdeniy'],
+  '3.4': [3, 'sozdanie-scenariya'],
+  '3.6': [3, 'publikaciya-zayavok-na-peremeschenie'],
+  '3.7': [4, 'tlb']
+};
+const pmUrl = id => {
+  const m = PM[id];
+  return m ? PM_BASE + '?stage=' + m[0] + '&node=' + m[1] : '';
+};
+
+const FLAT = BLOCKS.flatMap(b => b.steps.map(s => ({ ...s, block: b })));
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      loaded: !(props.startEmpty ?? false),
+      activeId: props.activeStepId || '1.10',
+      open: BLOCKS.reduce((a, b) => (a[b.n] = props.blocksExpanded ?? true, a), {}),
+      modalOpen: false,
+      pmOpen: false,
+      file: 0,
+      toast: ''
+    };
+    this.onKey = this.onKey.bind(this);
+  }
+
+  componentDidMount() { window.addEventListener('keydown', this.onKey); }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); clearTimeout(this.tt); }
+
+  onKey(e) {
+    if (!this.state.loaded || this.state.modalOpen) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); this.move(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); this.move(-1); }
+  }
+
+  idx() { return Math.max(0, FLAT.findIndex(s => s.id === this.state.activeId)); }
+
+  move(d) {
+    const i = this.idx() + d;
+    if (i < 0 || i >= FLAT.length) return;
+    const next = FLAT[i];
+    this.setState(s => ({ activeId: next.id, open: { ...s.open, [next.block.n]: true } }));
+  }
+
+  showToast(text) {
+    this.setState({ toast: text });
+    clearTimeout(this.tt);
+    this.tt = setTimeout(() => this.setState({ toast: '' }), 3200);
+  }
+
+  renderVals() {
+    const { loaded, activeId, open, modalOpen, file, toast } = this.state;
+    const active = FLAT[this.idx()];
+    const total = FLAT.length;
+    const withLink = FLAT.filter(s => s.url).length;
+    const posInBlock = active.block.steps.findIndex(s => s.id === active.id) + 1;
+
+    const blocks = BLOCKS.map(b => ({
+      n: b.n,
+      title: b.title,
+      count: b.steps.length + ' шагов',
+      connectorStyle: {
+        display: b.n === 1 ? 'none' : 'flex',
+        alignItems: 'center', justifyContent: 'center',
+        flex: '0 0 32px', width: '32px'
+      },
+      steps: b.steps.map(s => {
+        const on = s.id === activeId;
+        return {
+          id: s.id,
+          t: s.t,
+          hasLink: !!s.url,
+          select: () => this.setState({ activeId: s.id }),
+          nodeStyle: {
+            position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+            minHeight: '30px', padding: '5px 6px 5px 0', border: 0, borderRadius: '4px', cursor: 'pointer',
+            textAlign: 'left', fontFamily: 'inherit', fontSize: '13px', lineHeight: '18px', color: '#212529',
+            background: on ? '#faf3ff' : 'transparent'
+          },
+          dotStyle: {
+            flex: '0 0 12px', width: '12px', height: '12px', borderRadius: '9999px', boxSizing: 'border-box',
+            background: on ? '#9000ff' : '#ffffff',
+            border: on ? '2px solid #9000ff' : '2px solid ' + (s.url ? '#bfbfc1' : '#dfdfe0'),
+            boxShadow: '0 0 0 3px #ffffff'
+          },
+          numStyle: { flex: '0 0 30px', color: on ? '#9000ff' : '#949598', fontWeight: on ? 600 : 400, fontVariantNumeric: 'tabular-nums' }
+        };
+      })
+    }));
+
+    const reportRows = (file === 1 ? REPORT_BAD : REPORT_OK).map(r => ({
+      level: r.level, sheet: r.sheet, line: r.line, msg: r.msg,
+      levelStyle: {
+        display: 'inline-flex', alignItems: 'center', height: '20px', padding: '0 8px',
+        borderRadius: '9999px', fontSize: '12px', fontWeight: 600,
+        background: LEVEL[r.level].bg, color: LEVEL[r.level].fg
+      }
+    }));
+    const hasDanger = file === 1;
+
+    return {
+      loaded,
+      empty: !loaded,
+      blocks,
+      active: { ...active, hasLink: !!active.url, noLink: !active.url },
+      activeMeta: 'Блок ' + active.block.n + ' · шаг ' + posInBlock + ' из ' + active.block.steps.length,
+      footerText: total + ' шагов · ' + withLink + ' со ссылкой',
+      badgeProps: { style: { background: '#f4e3ff', color: '#6f00ce', font: '600 12px/16px "Open Sans", sans-serif', minHeight: '20px', minWidth: 0, padding: '2px 8px' } },
+      pmMapped: !!PM[active.id],
+      pmUnmapped: !PM[active.id],
+      pmStageTitle: PM[active.id] ? 'Этап ' + PM[active.id][0] + ' · ' + PM_STAGES[PM[active.id][0]] : '',
+      pmNodeId: PM[active.id] ? PM[active.id][1] : '',
+      pmUrl: pmUrl(active.id),
+      pmOpen: this.state.pmOpen,
+      pmEmbed: this.state.pmOpen && !!PM[active.id],
+      pmToggleLabel: this.state.pmOpen ? 'Скрыть карту' : 'Показать на карте',
+      pmToggle: () => this.setState(s => ({ pmOpen: !s.pmOpen })),
+      pmOpenTab: () => window.open(pmUrl(active.id), '_blank', 'noopener'),
+      messageBoxStyle: {
+        margin: '20px 0', borderRadius: '0 4px 4px 0', padding: '20px 24px',
+        background: active.message ? '#faf3ff' : '#ffffff',
+        borderLeft: active.message ? '3px solid #9000ff' : '3px dashed #eacdff'
+      },
+      messageText: active.message || 'Поле не заполнено. Добавьте посыл клиенту в колонке «Посыл клиенту» файла сценария.',
+      messageTextStyle: active.message
+        ? { margin: '12px 0 0', fontSize: '18px', lineHeight: '28px', textWrap: 'pretty' }
+        : { margin: '12px 0 0', fontSize: '14px', lineHeight: '20px', color: '#949598', textWrap: 'pretty' },
+      resultText: active.result || 'Поле не заполнено. Добавьте ожидаемый результат в колонке «Ожидаемый результат».',
+      resultTextStyle: active.result
+        ? { margin: '10px 0 0', fontSize: '14px', lineHeight: '20px', textWrap: 'pretty' }
+        : { margin: '10px 0 0', fontSize: '14px', lineHeight: '20px', color: '#949598', textWrap: 'pretty' },
+      atFirst: this.idx() === 0,
+      atLast: this.idx() === total - 1,
+      prev: () => this.move(-1),
+      next: () => this.move(1),
+      openScreen: () => window.open(active.url, '_blank', 'noopener'),
+      openModal: () => this.setState({ modalOpen: true }),
+      closeModal: () => this.setState({ modalOpen: false }),
+      noop: e => e.preventDefault(),
+      pickFile: () => this.setState(s => ({ file: s.file === 1 ? 2 : 1 })),
+      hasFile: file > 0,
+      dropzoneText: file === 0 ? 'Перетащи .xlsx или выбери файл'
+        : file === 1 ? 'Deployment_IBP.xlsx' : 'Deployment_IBP_v2.xlsx',
+      dropzoneHint: file === 0 ? 'Один лист = один блок'
+        : file === 1 ? 'Нажми, чтобы выбрать исправленный файл' : 'Файл проверен без ошибок',
+      checkSummary: SHEETS.length + ' листа → ' + SHEETS.length + ' блока · ' + total + ' шагов · ' + withLink + ' со ссылкой',
+      sheets: SHEETS,
+      report: reportRows,
+      submitDisabled: file === 0 || hasDanger,
+      submitHint: hasDanger ? 'Исправьте ошибки в файле и загрузите снова' : '',
+      submit: () => {
+        this.setState({ modalOpen: false, loaded: true, activeId: '1.1', file: 0 });
+        this.showToast('Сценарий загружен: ' + total + ' шагов');
+      },
+      modalOpen,
+      toast
+    };
+  }
+}
+</script>
+</body>
+</html>
