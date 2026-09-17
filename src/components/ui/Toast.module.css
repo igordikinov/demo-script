@@ -1,0 +1,18 @@
+/* Тост — макет v2: внизу по центру, тёмный фон, 14/20, 12px 20px, радиус 4. */
+
+.region {
+  position: fixed;
+  left: 50%;
+  bottom: var(--dn-toast-offset);
+  z-index: var(--dn-z-toast);
+  transform: translateX(-50%);
+}
+
+.toast {
+  padding: var(--scp-spacing-md) var(--scp-spacing-xl);
+  border-radius: var(--scp-border-radius-sm);
+  background: var(--scp-color-neutral-900);
+  color: var(--scp-text-neutral-tertiary);
+  font: var(--scp-body-regular), sans-serif;
+  box-shadow: var(--scp-shadow-menu);
+}

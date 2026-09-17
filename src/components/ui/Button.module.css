@@ -1,0 +1,119 @@
+/*
+ * Кнопка md: design/catalog-mockup.html (.btn) и правила .scp-btn из
+ * design/_ds/.../_ds_bundle.js (Button.jsx). Только var(--…) из tokens.css.
+ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--scp-spacing-sm);
+  height: var(--scp-btn-height-md);
+  padding: 0 var(--scp-spacing-lg);
+  border: 1px solid transparent;
+  border-radius: var(--scp-radius-button);
+  font: var(--scp-body-semibold), sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--dn-transition),
+    color var(--dn-transition),
+    border-color var(--dn-transition);
+}
+
+.button:disabled {
+  cursor: default;
+}
+
+/* Иконка рядом с текстом — 16 px (макет v2: «Загрузить из Excel», «Открыть экран»). */
+.icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: var(--dn-btn-icon-size);
+  height: var(--dn-btn-icon-size);
+}
+
+.icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Кнопка только с иконкой — 40×40, иконка 18 px (макет v2: ‹ ›). */
+.button[data-icon-only='true'] {
+  width: var(--scp-btn-height-md);
+  padding: 0;
+}
+
+.button[data-icon-only='true'] .icon {
+  width: var(--scp-btn-icon-size-md);
+  height: var(--scp-btn-icon-size-md);
+}
+
+/* primary — .scp-btn--flat.scp-btn--primary */
+.button[data-variant='primary'] {
+  background: var(--scp-background-action-brand-primary-default);
+  color: var(--scp-text-neutral-tertiary);
+}
+
+.button[data-variant='primary']:hover:not(:disabled) {
+  background: var(--scp-background-action-brand-primary-hover);
+}
+
+.button[data-variant='primary']:active:not(:disabled) {
+  background: var(--scp-background-action-brand-primary-active);
+}
+
+/* destructive — .scp-btn--flat.scp-btn--warn */
+.button[data-variant='destructive'] {
+  background: var(--scp-background-action-destructive-default);
+  color: var(--scp-text-neutral-tertiary);
+}
+
+.button[data-variant='destructive']:hover:not(:disabled) {
+  background: var(--scp-background-action-destructive-hover);
+}
+
+.button[data-variant='destructive']:active:not(:disabled) {
+  background: var(--scp-background-action-destructive-active);
+}
+
+/* .scp-btn--flat:disabled */
+.button[data-variant='primary']:disabled,
+.button[data-variant='destructive']:disabled {
+  background: var(--scp-background-action-brand-primary-disable);
+  color: var(--scp-text-neutral-disable);
+}
+
+/* stroked — .scp-btn--stroked.scp-btn--primary */
+.button[data-variant='stroked'] {
+  background: var(--scp-background-primary);
+  border-color: var(--scp-border-brand-default);
+  color: var(--scp-primary-color);
+}
+
+.button[data-variant='stroked']:hover:not(:disabled) {
+  background: var(--scp-background-action-brand-outline-hover);
+}
+
+.button[data-variant='stroked']:active:not(:disabled) {
+  background: var(--scp-background-action-brand-outline-active);
+}
+
+/*
+ * neutral — color="neutral" в макете v2: в бандле правил для него нет,
+ * работает общий .scp-btn--stroked (белый фон, прозрачная рамка), текст
+ * тёмный (catalog-mockup .btn-ghost). Правил :hover/:active нет ни в бандле,
+ * ни у .btn-ghost — фон при наведении не меняется.
+ */
+.button[data-variant='neutral'] {
+  background: var(--scp-background-primary);
+  color: var(--scp-content-primary);
+}
+
+/* .scp-btn--stroked:disabled */
+.button[data-variant='stroked']:disabled,
+.button[data-variant='neutral']:disabled {
+  background: var(--scp-background-primary);
+  border-color: var(--scp-border-neutral-disable);
+  color: var(--scp-text-neutral-disable);
+}

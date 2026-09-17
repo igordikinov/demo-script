@@ -1,0 +1,45 @@
+/*
+ * Бейдж модуля — catalog-mockup .badge, макет v2 badgeProps.
+ * Пилюли уровня — catalog-mockup .pill, макет v2 LEVEL / levelStyle.
+ * Правила тонов идут первыми и по одному на тон (на это опирается сверка
+ * цветов в tests/tokens.test.ts).
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--scp-badge-border-radius);
+}
+
+.badge[data-tone='module'] {
+  min-height: var(--dn-pill-height);
+  padding: var(--dn-badge-padding);
+  font: var(--scp-xs-semibold), sans-serif;
+  background: var(--scp-color-brand-100);
+  color: var(--scp-color-brand-800);
+}
+
+.badge[data-tone='danger'] {
+  background: var(--scp-system-error-background);
+  color: var(--scp-color-error-700);
+}
+
+.badge[data-tone='warning'] {
+  background: var(--scp-system-warning-background);
+  color: var(--scp-color-warning-800);
+}
+
+.badge[data-tone='info'] {
+  background: var(--scp-color-neutral-50);
+  color: var(--scp-color-neutral-700);
+}
+
+/* Размеры пилюль уровня: высота 20, 0 8px, 12 px 600. */
+.badge:not([data-tone='module']) {
+  height: var(--dn-pill-height);
+  padding: 0 var(--scp-spacing-sm);
+  font-size: var(--scp-font-sizes-12);
+  font-weight: var(--scp-font-weight-semi-bold);
+}

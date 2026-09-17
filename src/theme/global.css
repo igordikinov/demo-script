@@ -1,0 +1,30 @@
+/*
+ * Базовые стили документа — по design/_ds/.../tokens/base.css, только
+ * значимое для приложения (без .material-icons, скроллбаров и ссылок).
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--scp-font-family), system-ui, sans-serif;
+  font-size: var(--scp-font-sizes-14);
+  line-height: var(--scp-line-height-20);
+  color: var(--scp-content-primary);
+  background: var(--scp-bg-canvas);
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}

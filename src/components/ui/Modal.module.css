@@ -1,0 +1,94 @@
+/*
+ * Модальное окно — макет v2 (окно загрузки, 720 px) и catalog-mockup
+ * (.overlay/.modal/.m-head/.m-body/.m-foot, A5.2 — 480 px).
+ * Отступы тела и промежуток в подвале в макетах разные — разведены по data-width.
+ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--dn-z-modal);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--dn-overlay-padding);
+  overflow: auto;
+  background: var(--dn-overlay-bg);
+}
+
+.dialog {
+  max-width: 100%;
+  background: var(--scp-background-modal);
+  border-radius: var(--scp-radius-modal);
+  box-shadow: var(--scp-shadow-menu);
+}
+
+/* Окно получает фокус само, только если внутри нечего фокусировать; рамка
+   вокруг всего окна не нужна — это не интерактивный элемент. */
+.dialog:focus {
+  outline: none;
+}
+
+.dialog[data-width='480'] {
+  width: var(--dn-modal-width-sm);
+}
+
+.dialog[data-width='720'] {
+  width: var(--dn-modal-width-lg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-lg);
+  padding: var(--scp-spacing-xl) var(--scp-spacing-2xl);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  font: var(--scp-h7-semibold), sans-serif;
+}
+
+.close {
+  display: inline-flex;
+  padding: var(--scp-spacing-xs);
+  border: 0;
+  background: transparent;
+  color: var(--scp-color-neutral-600);
+  cursor: pointer;
+}
+
+.close svg {
+  width: var(--scp-btn-icon-size-md);
+  height: var(--scp-btn-icon-size-md);
+}
+
+/* Макет v2:208 — тело окна загрузки: колонка секций с промежутком 24 px. */
+.dialog[data-width='720'] .body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--scp-spacing-2xl);
+  padding: var(--scp-spacing-2xl);
+}
+
+.dialog[data-width='480'] .body {
+  padding: var(--scp-spacing-xl) var(--scp-spacing-2xl);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--scp-dialog-padding-vertical) var(--scp-dialog-padding-horizontal);
+  border-top: 1px solid var(--scp-color-neutral-100);
+}
+
+.dialog[data-width='720'] .footer {
+  gap: var(--scp-spacing-lg);
+}
+
+.dialog[data-width='480'] .footer {
+  gap: var(--scp-spacing-md);
+}
