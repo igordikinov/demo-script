@@ -1,6 +1,7 @@
-// SPEC §4.4:269–281 (карточка шага A3), §4.9:350 (открытие экрана), §11:612
-// (подпись «Бизнес ценность» без дефиса). ТК 16 (SPEC §8:408, дословно):
-// «"Открыть экран" → window.open(url, '_blank', 'noopener'); null → тост».
+// SPEC §4.4:271–283 (карточка шага A3; §4.4:283 — переносы строк из ячейки
+// сохраняются), §4.9:354 (открытие экрана), §11:616 (подпись «Бизнес
+// ценность» без дефиса). ТК 16 (SPEC §8:412, дословно):
+// «"Открыть экран" → window.open(url, '_blank'), opener = null; null → тост».
 // ТК 8 (карта процесса) и ТК 21 (скриншоты) сюда не входят — они acceptance
 // DN-15 и visual-qa. Фикстура и способ её дополнить (schema/id/source/…) —
 // как в tests/reducer.test.ts: другой buildScenario держать незачем.
@@ -112,7 +113,7 @@ function renderCard(
     scenario: source,
     stepId,
   });
-  // openScenario молча откатывает неизвестный/пустой номер на первый шаг (§4.7:318) —
+  // openScenario молча откатывает неизвестный/пустой номер на первый шаг (§4.7:322) —
   // проверка здесь ловит опечатку в номере шага теста, а не путает её с поведением карточки.
   expect(initialState.stepId).toBe(stepId);
   return render(
@@ -140,7 +141,7 @@ describe('StepCard: без открытого сценария', () => {
   });
 });
 
-describe('StepCard: шапка (SPEC §4.4:270 — «Блок {n} · шаг {k} из {m}» и заголовок шага)', () => {
+describe('StepCard: шапка (SPEC §4.4:275 — «Блок {n} · шаг {k} из {m}» и заголовок шага)', () => {
   it('1.10: позиция и заголовок', () => {
     const step = findStep(scenario, '1.10');
     const position = mustPosition(scenario, '1.10');
@@ -152,10 +153,13 @@ describe('StepCard: шапка (SPEC §4.4:270 — «Блок {n} · шаг {k} 
   });
 });
 
-describe("ТК 16 (SPEC §8:408): «Открыть экран» → window.open(url, '_blank', 'noopener')", () => {
-  it('вкладка открылась (window.open вернул объект) — вызов с нужными аргументами, тоста нет', () => {
+describe("ТК 16 (SPEC §8:412): «Открыть экран» → window.open(url, '_blank'), opener = null; null → тост", () => {
+  it('вкладка открылась (window.open вернул объект) — вызов без noopener, opener обнулён, тоста нет', () => {
     const step = findStep(scenario, '1.10');
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    // opener стартует непустым: обнуление после open() должно быть видно явно,
+    // а не совпасть случайно с исходным undefined заглушки (план DN-976, Д4).
+    const tab = { opener: window } as Window;
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(tab);
     renderCard(scenario, '1.10');
 
     act(() => {
@@ -163,18 +167,21 @@ describe("ТК 16 (SPEC §8:408): «Открыть экран» → window.open(
     });
 
     expect(openSpy).toHaveBeenCalledTimes(1);
-    expect(openSpy).toHaveBeenCalledWith(step.url, '_blank', 'noopener');
+    expect(openSpy).toHaveBeenCalledWith(step.url, '_blank');
+    expect(tab.opener).toBeNull();
     expect(screen.getByTestId('toast-probe').textContent).toBe('');
   });
 
   it('window.open вернул null (заблокировано) — тост «Браузер не дал открыть вкладку…»', () => {
-    vi.spyOn(window, 'open').mockReturnValue(null);
+    const step = findStep(scenario, '1.10');
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
     renderCard(scenario, '1.10');
 
     act(() => {
       screen.getByRole('button', { name: ru.card.openScreen }).click();
     });
 
+    expect(openSpy).toHaveBeenCalledWith(step.url, '_blank');
     expect(screen.getByTestId('toast-probe')).toHaveTextContent(ru.openScreen.popupBlocked);
   });
 });
@@ -243,7 +250,7 @@ describe('StepCard: секция «Экран»', () => {
   });
 });
 
-describe('StepCard: секция «Бизнес ценность» и «Ожидаемый результат» — заполнены (SPEC §4.4:277–278)', () => {
+describe('StepCard: секция «Бизнес ценность» и «Ожидаемый результат» — заполнены (SPEC §4.4:279–280)', () => {
   it('1.10: подписи и тексты видны, у ценности data-empty="false"', () => {
     const step = findStep(scenario, '1.10');
     expect(step.value).not.toBe('');
@@ -260,7 +267,7 @@ describe('StepCard: секция «Бизнес ценность» и «Ожид
   });
 });
 
-describe('StepCard: секция «Бизнес ценность» и «Ожидаемый результат» — пусты (SPEC §4.4:277–278)', () => {
+describe('StepCard: секция «Бизнес ценность» и «Ожидаемый результат» — пусты (SPEC §4.4:279–280)', () => {
   it.each(['1.2', '2.3'])(
     '%s: подписи на месте, тексты — «поле не заполнено», data-empty="true"',
     (stepId) => {
@@ -284,7 +291,7 @@ describe('StepCard: секция «Бизнес ценность» и «Ожид
   );
 });
 
-describe('StepCard: секция «Действие» — только если заполнено (SPEC §4.4:276)', () => {
+describe('StepCard: секция «Действие» — только если заполнено (SPEC §4.4:278)', () => {
   it('1.10: подпись и текст действия видны', () => {
     const step = findStep(scenario, '1.10');
     expect(step.action).not.toBe('');
@@ -300,7 +307,7 @@ describe('StepCard: секция «Действие» — только если 
   });
 });
 
-describe('StepCard: секция «Комментарий» — только если заполнено (SPEC §4.4:279)', () => {
+describe('StepCard: секция «Комментарий» — только если заполнено (SPEC §4.4:281)', () => {
   it('1.10: комментарий в фикстуре пуст — подписи «Комментарий» нет', () => {
     const step = findStep(scenario, '1.10');
     expect(step.comment).toBe('');
@@ -351,11 +358,41 @@ describe('StepCard: смена активного шага через dispatch',
   });
 });
 
+type PreLineField = 'action' | 'value' | 'result' | 'comment';
+
+/** Поле карточки и его подпись — SPEC §4.4:283 называет ровно эти четыре. */
+const PRE_LINE_FIELDS: [field: PreLineField, caption: string][] = [
+  ['action', ru.card.action],
+  ['value', ru.card.value],
+  ['result', ru.card.result],
+  ['comment', ru.card.comment],
+];
+
+describe('StepCard: переносы строк из ячейки сохраняются (SPEC §4.4:283)', () => {
+  it.each(PRE_LINE_FIELDS)(
+    '%s: две строки через \\n не схлопываются в разметке',
+    (field, caption) => {
+      // Текст не выдуман (CLAUDE.md): две непустые строки из фикстуры — действия
+      // шагов 1.10 и 1.11, склеенные переносом.
+      const text = `${findStep(scenario, '1.10').action}\n${findStep(scenario, '1.11').action}`;
+      const patch = { [field]: text } as Partial<Record<PreLineField, string>>;
+      renderCard(withStep(scenario, '1.10', patch), '1.10');
+
+      const heading = screen.getByRole('heading', { level: 2, name: caption });
+      const paragraph = heading.closest('section')?.querySelector('p');
+      // getByText/toHaveTextContent нормализуют пробелы только в найденном узле,
+      // а искомую строку не трогают: 'a b' не равно 'a\nb' (план DN-976, Д1) —
+      // сравниваем textContent напрямую.
+      expect(paragraph?.textContent).toBe(text);
+    },
+  );
+});
+
 // Образец — проверка тонов Badge в tests/tokens.test.ts. cssColors.test.ts и
 // tokens.test.ts сканируют src/**/*.css сами (новых файлов там трогать не
-// нужно, план DN-12 D4); здесь — точечная проверка требований SPEC §4.4:277
-// (пунктирная граница пустой ценности) и §4.4:271 (ширина карточки).
-describe('StepCard.module.css — цвета и ширина только через токены (SPEC §4.4:271, :277, §5:358)', () => {
+// нужно, план DN-12 D4); здесь — точечная проверка требований SPEC §4.4:279
+// (пунктирная граница пустой ценности) и §4.4:273 (ширина карточки).
+describe('StepCard.module.css — цвета и ширина только через токены (SPEC §4.4:273, :279, §5:360)', () => {
   it('содержит var(--brand-50/700/200), dashed и var(--dn-card-max-width)', () => {
     // Тот же приём с переменной, что и у fixturePath выше (Vite + jsdom).
     const cssPath = fileURLToPath(

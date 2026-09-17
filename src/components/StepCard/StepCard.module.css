@@ -73,6 +73,7 @@
 /* Текст секции (v2:148, :517–519). */
 .text {
   margin: var(--dn-card-caption-gap) 0 0;
+  white-space: pre-line;
   text-wrap: pretty;
 }
 
@@ -96,6 +97,7 @@
   margin: var(--scp-spacing-md) 0 0;
   font-size: var(--scp-font-sizes-18);
   line-height: var(--scp-line-height-28);
+  white-space: pre-line;
   text-wrap: pretty;
 }
 
@@ -120,5 +122,6 @@
   margin: var(--dn-card-caption-gap) 0 0;
   font: var(--scp-xs-regular), sans-serif;
   color: var(--scp-color-neutral-600);
+  white-space: pre-line;
   text-wrap: pretty;
 }

@@ -1,4 +1,4 @@
-// Карточка шага A3 (SPEC §4.4:269–281) и открытие экрана (§4.9:350).
+// Карточка шага A3 (SPEC §4.4:271–283) и открытие экрана (§4.9:354).
 // Разметка — design/Демо-навигатор v2.dc.html:84–165. Кнопки ‹ › в шапке —
 // DN-13 (§4.5), секция «Карта процесса» и встроенная карта — DN-15 (§4.6).
 import { useAppStore } from '../../state/context.ts';
@@ -25,17 +25,21 @@ export function StepCard() {
   // без кнопки и серого URL. Решение владельца DN-dkb; схема §3.1 не меняется.
   const hasUrl = isScreenUrl(step.url);
 
-  // §4.9:350 и ТК 16 дословно: null в ответ — тост. Вызов и проверка в одном
-  // месте: с 'noopener' браузер возвращает null и при открытой вкладке (план DN-12, В0).
+  // §4.9:354 и ТК 16: null в ответ — тост. Без 'noopener': с ним window.open всегда
+  // возвращает null, и блокировку не отличить от открытия (решение DN-cx3), поэтому
+  // opener у открытой вкладки обнуляется вручную.
   // Повторная проверка адреса — страховка: обработчик вешается только при hasUrl,
   // поэтому из DOM эта ветка недостижима и тестами не ловится (план DN-dkb, D2).
   const handleOpen = () => {
     if (!isScreenUrl(step.url)) {
       return;
     }
-    if (window.open(step.url, '_blank', 'noopener') === null) {
+    const tab = window.open(step.url, '_blank');
+    if (tab === null) {
       dispatch({ type: 'showToast', message: ru.openScreen.popupBlocked });
+      return;
     }
+    tab.opener = null;
   };
 
   const valueEmpty = step.value === '';
