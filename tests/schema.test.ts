@@ -4,8 +4,7 @@
 // схема — чистые данные без DOM.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { expectTypeOf } from 'vitest';
-import { ScenarioSchema, RawScenarioSchema, type RawScenario } from '../src/model/schema';
+import { ScenarioSchema } from '../src/model/schema';
 
 // Эталон содержания — tests/fixtures/deployment-demo.json (CLAUDE.md: не
 // придумывать содержание сценария). В фикстуре нет schema/id/source/fileName/
@@ -121,26 +120,5 @@ describe('ScenarioSchema: отклоняет неверные данные', () 
     const patchedSteps = [firstStep, ...steps.slice(1)];
     scenario['blocks'] = [{ ...first, steps: patchedSteps }, ...blocks.slice(1)];
     expect(ScenarioSchema.safeParse(scenario).success).toBe(false);
-  });
-});
-
-describe('RawScenario: без id/source/loadedAt (SPEC:42, :100)', () => {
-  it('на уровне типов', () => {
-    expectTypeOf<RawScenario>().not.toHaveProperty('id');
-    expectTypeOf<RawScenario>().not.toHaveProperty('source');
-    expectTypeOf<RawScenario>().not.toHaveProperty('loadedAt');
-  });
-
-  it('форма схемы содержит только оставшиеся поля', () => {
-    expect(Object.keys(RawScenarioSchema.shape).sort()).toEqual(
-      ['blocks', 'fileName', 'map', 'module', 'schema', 'title'].sort(),
-    );
-  });
-
-  it('parse не возвращает id/source/loadedAt в рантайме', () => {
-    const parsed = RawScenarioSchema.parse(validScenario());
-    expect(parsed).not.toHaveProperty('id');
-    expect(parsed).not.toHaveProperty('source');
-    expect(parsed).not.toHaveProperty('loadedAt');
   });
 });

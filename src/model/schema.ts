@@ -38,11 +38,3 @@ export type Step = z.infer<typeof StepSchema>;
 export type Block = z.infer<typeof BlockSchema>;
 /** Сценарий целиком (SPEC §3.1). */
 export type Scenario = z.infer<typeof ScenarioSchema>;
-
-/**
- * Сценарий из разбора книги — без `id`, `source` и `loadedAt` (SPEC §2:42, §3.1:100):
- * их проставляет тот, кто сохраняет, — библиотека (§3.6) или сборка общих (§3.7).
- */
-export const RawScenarioSchema = ScenarioSchema.omit({ id: true, source: true, loadedAt: true });
-/** Результат `readWorkbook` до сохранения (SPEC §2:42, §3.1:100). */
-export type RawScenario = z.infer<typeof RawScenarioSchema>;
