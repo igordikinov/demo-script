@@ -21,6 +21,9 @@ const CANCEL = 'Отмена';
 /** «{withLink} со ссылкой» — хвост сводки (SPEC §3.3:143, §4.3:261). */
 const withLinkText = (withLink: number): string => `${withLink} со ссылкой`;
 
+/** Уровни проверок отчёта — вторая колонка таблицы кодов (SPEC §3.5:177–191). */
+type ReportLevel = 'danger' | 'warning' | 'info';
+
 export const ru = {
   nouns,
 
@@ -38,6 +41,12 @@ export const ru = {
   report: {
     /** Колонка «Строка» для `row: null` (SPEC §3.5:193). */
     noRow: '—',
+    /** Подпись пилюли уровня (SPEC §3.5:193, §4.8:339, §11:623). */
+    levels: {
+      danger: 'ошибка',
+      warning: 'предупреждение',
+      info: 'информация',
+    } as const satisfies Record<ReportLevel, string>,
     /** Сообщения проверок по кодам (SPEC §3.5:177–191). */
     codes: {
       /** SPEC §3.5:177. */
@@ -175,11 +184,17 @@ export const ru = {
       `${countRu(steps, nouns.step)} · ${withLinkText(withLink)}`,
     /** «{k} {шагов}» в шапке блока (SPEC §4.3:263). */
     blockSteps: (k: number): string => countRu(k, nouns.step),
+    /** Скрытый текст у шага со ссылкой, иконка декоративная (SPEC §4.3:267, §11:623). */
+    linkHint: 'есть ссылка на экран',
   },
 
   card: {
     /** «Блок {n} · шаг {k} из {m}» (SPEC §4.4:273). */
     position: (n: number, k: number, m: number): string => `Блок ${n} · шаг ${k} из ${m}`,
+    /** title/aria-label ‹ (SPEC §4.4:275, §11:623). */
+    prevStep: 'Предыдущий шаг',
+    /** title/aria-label › (SPEC §4.4:275, §11:623). */
+    nextStep: 'Следующий шаг',
     /** Подпись секции (SPEC §4.4:274). */
     screen: 'Экран',
     /** Кнопка primary (SPEC §4.4:274). */
@@ -231,6 +246,10 @@ export const ru = {
   },
 
   importModal: {
+    /** Заголовок окна (SPEC §4.8:329, §11:623). */
+    title: 'Загрузка из Excel',
+    /** title/aria-label крестика (SPEC §4.8:329, §11:623). */
+    close: 'Закрыть',
     /** Заголовок шага (SPEC §4.8:327). */
     step1: 'Шаг 1 · Файл',
     /** Зона выбора до выбора файла (SPEC §4.8:327). */

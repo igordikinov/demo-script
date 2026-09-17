@@ -9,6 +9,7 @@ import { useAppStore } from '../../state/context.ts';
 import { flatSteps } from '../../state/reducer.ts';
 import { ArrowRightIcon, ExternalLinkIcon } from '../ui/icons.tsx';
 import { SectionCaption } from '../ui/SectionCaption.tsx';
+import { VisuallyHidden } from '../ui/VisuallyHidden.tsx';
 import styles from './ScenarioScheme.module.css';
 
 export function ScenarioScheme() {
@@ -74,7 +75,12 @@ export function ScenarioScheme() {
                         <span className={styles.dot} aria-hidden="true" />
                         <span className={styles.number}>{step.id}</span>
                         <span className={styles.stepTitle}>{step.title}</span>
-                        {hasLink && <ExternalLinkIcon className={styles.linkIcon} />}
+                        {hasLink && (
+                          <>
+                            <ExternalLinkIcon className={styles.linkIcon} />
+                            <VisuallyHidden>{ru.scheme.linkHint}</VisuallyHidden>
+                          </>
+                        )}
                       </button>
                     </li>
                   );

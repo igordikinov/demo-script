@@ -44,6 +44,23 @@ function parseSpecCodes(): Map<string, string> {
   return map;
 }
 
+/**
+ * Ищет `re` во всех строках SPEC.md и требует ровно одно совпадение — иначе
+ * бросает Error (план DN-36l, дефект 5): молчаливый `!` замаскировал бы и
+ * «строку переименовали», и «фразу задвоили».
+ */
+function specMatchOnce(re: RegExp): RegExpExecArray {
+  const found = specLines
+    .map((line) => re.exec(line))
+    .filter((m): m is RegExpExecArray => m !== null);
+  if (found.length !== 1) {
+    throw new Error(
+      `ожидалось ровно одно совпадение ${String(re)} в SPEC.md, найдено ${found.length}`,
+    );
+  }
+  return found[0] as RegExpExecArray;
+}
+
 describe('ru.report.codes: все 15 кодов §3.5 дословно из SPEC.md', () => {
   const specCodes = parseSpecCodes();
 
@@ -64,6 +81,68 @@ describe('ru.report.codes: все 15 кодов §3.5 дословно из SPEC
 
   it('report.noRow — длинное тире (SPEC:193)', () => {
     expect(ru.report.noRow).toBe('—');
+  });
+});
+
+describe('ru: подписи DN-lur дословно из SPEC.md', () => {
+  const MODAL =
+    /^Модальное окно 720 px, заголовок «([^»]+)», .*закрытие крестиком \(`title`\/`aria-label` «([^»]+)»\)/; // :329
+  const NAV =
+    /Справа две иконки-кнопки ‹ › \(§4\.5\), подписаны `title`\/`aria-label` «([^»]+)» \/ «([^»]+)»\./; // :275
+  const LEVELS_35 =
+    /уровень показывается пилюлей с подписью по-русски: `danger` — «([^»]+)», `warning` — «([^»]+)», `info` — «([^»]+)»\./; // :193
+  const LEVELS_48 =
+    /уровень — пилюля цветами §5 с подписью по-русски: «([^»]+)» \/ «([^»]+)» \/ «([^»]+)»\./; // :339
+  const LINK_HINT =
+    /\(иконка декоративная, `aria-hidden`; для скринридера — visually-hidden текст «([^»]+)»\)/; // :267
+  const Q10 =
+    /^\| 10 \| DN-lur: .*заголовок «([^»]+)», крестик «([^»]+)», ‹ › — «([^»]+)»\/«([^»]+)», пилюли — «([^»]+)»\/«([^»]+)»\/«([^»]+)», иконки декоративные, у шага со ссылкой — скрытый текст «([^»]+)»\./; // :623
+
+  it('importModal.title / importModal.close = заголовок и крестик модалки (SPEC §4.8:329)', () => {
+    const [, title, close] = specMatchOnce(MODAL);
+    expect(ru.importModal.title).toBe(title);
+    expect(ru.importModal.close).toBe(close);
+  });
+
+  it('card.prevStep / card.nextStep = подписи ‹ › (SPEC §4.4:275)', () => {
+    const [, prev, next] = specMatchOnce(NAV);
+    expect(ru.card.prevStep).toBe(prev);
+    expect(ru.card.nextStep).toBe(next);
+  });
+
+  it('report.levels — те же три ключа, что во второй колонке таблицы §3.5', () => {
+    const levelsInSpec = new Set<string>();
+    for (const line of specLines) {
+      const m = CODE_ROW.exec(line);
+      if (m) levelsInSpec.add(m[2] as string);
+    }
+    expect([...levelsInSpec].sort()).toEqual(['danger', 'info', 'warning']);
+    expect(Object.keys(ru.report.levels).sort()).toEqual(['danger', 'info', 'warning']);
+  });
+
+  it('report.levels подписи совпадают дословно с §3.5:193 и §4.8:339', () => {
+    const level35 = specMatchOnce(LEVELS_35);
+    const level48 = specMatchOnce(LEVELS_48);
+    const ordered = [ru.report.levels.danger, ru.report.levels.warning, ru.report.levels.info];
+    expect(ordered).toEqual([level35[1], level35[2], level35[3]]);
+    expect(ordered).toEqual([level48[1], level48[2], level48[3]]);
+  });
+
+  it('scheme.linkHint = скрытый текст у шага со ссылкой (SPEC §4.3:267)', () => {
+    const [, hint] = specMatchOnce(LINK_HINT);
+    expect(ru.scheme.linkHint).toBe(hint);
+  });
+
+  it('все восемь строк решения DN-lur совпадают со строкой 10 §11 (SPEC:623)', () => {
+    const [, modalTitle, close, prev, next, danger, warning, info, linkHint] = specMatchOnce(Q10);
+    expect(ru.importModal.title).toBe(modalTitle);
+    expect(ru.importModal.close).toBe(close);
+    expect(ru.card.prevStep).toBe(prev);
+    expect(ru.card.nextStep).toBe(next);
+    expect(ru.report.levels.danger).toBe(danger);
+    expect(ru.report.levels.warning).toBe(warning);
+    expect(ru.report.levels.info).toBe(info);
+    expect(ru.scheme.linkHint).toBe(linkHint);
   });
 });
 

@@ -28,6 +28,9 @@ import { appReducer, createInitialState, flatSteps } from '../src/state/reducer'
 import { ScenarioSchema, type Scenario, type Step } from '../src/model/schema';
 import { ru } from '../src/i18n/ru';
 import { ScenarioScheme } from '../src/components/ScenarioScheme/ScenarioScheme';
+// Контракт скрытой подсказки (SPEC §4.3:267, §11:623, план DN-36l) — класс
+// visuallyHidden, тот же, что проверяет tests/VisuallyHidden.test.tsx.
+import hiddenStyles from '../src/components/ui/VisuallyHidden.module.css';
 import fixtureJson from './fixtures/deployment-demo.json';
 
 const fixture = fixtureJson as {
@@ -218,6 +221,75 @@ describe('ScenarioScheme: список шагов (SPEC §4.3:265)', () => {
     expect(button.querySelector('svg[data-icon="external-link"]')).toBeNull();
     expect(button).not.toHaveAttribute('data-link');
     expect(container.querySelectorAll('svg[data-icon="external-link"]')).toHaveLength(23);
+    // «Испорченный» url — тоже «нет ссылки» для скрытой подсказки (§11:623):
+    // у 1.10 её нет, а на всю схему остаётся 23 подсказки вместо 24.
+    expect(button.textContent).not.toContain(ru.scheme.linkHint);
+    expect(screen.getAllByText(ru.scheme.linkHint)).toHaveLength(23);
+  });
+});
+
+describe('ScenarioScheme: скрытая подпись ссылки (SPEC §4.3:267, §11:623)', () => {
+  it('доступное имя содержит ru.scheme.linkHint ровно у 24 кнопок — у шагов из stepsWithLink, и только у них', () => {
+    renderScheme();
+    const namesWithHint = new Map<string, string>();
+    // Доступное имя берём через callback getByRole — он получает готовую
+    // строку имени, что надёжнее ручного computeAccessibleName (план, дефект 4).
+    for (const step of steps) {
+      let capturedName: string | undefined;
+      screen.getByRole('button', {
+        name: (accessibleName, element) => {
+          if (element.getAttribute('data-step-id') === step.id) {
+            capturedName = accessibleName;
+          }
+          return element.getAttribute('data-step-id') === step.id;
+        },
+      });
+      if (capturedName === undefined) {
+        throw new Error(`кнопка шага ${step.id} не найдена`);
+      }
+      const hasHint = capturedName.includes(ru.scheme.linkHint);
+      namesWithHint.set(step.id, capturedName);
+      expect(hasHint).toBe(step.url !== '');
+    }
+    const idsWithHint = [...namesWithHint.entries()]
+      .filter(([, name]) => name.includes(ru.scheme.linkHint))
+      .map(([id]) => id);
+    expect(idsWithHint.sort()).toEqual(stepsWithLink.map((step) => step.id).sort());
+    expect(idsWithHint).toHaveLength(24);
+    for (const id of stepsWithoutLink) {
+      expect(namesWithHint.get(id)).not.toContain(ru.scheme.linkHint);
+    }
+  });
+
+  it('доступное имя кнопки с подсказкой содержит и step.title (не заменяет его)', () => {
+    renderScheme();
+    for (const step of stepsWithLink) {
+      let capturedName = '';
+      screen.getByRole('button', {
+        name: (accessibleName, element) => {
+          const match = element.getAttribute('data-step-id') === step.id;
+          if (match) capturedName = accessibleName;
+          return match;
+        },
+      });
+      expect(capturedName).toContain(step.title);
+      expect(capturedName).toContain(ru.scheme.linkHint);
+    }
+  });
+
+  it('текст подсказки — ровно одна на кнопку (24 штуки), класс visuallyHidden, не внутри aria-hidden', () => {
+    renderScheme();
+    // noUncheckedIndexedAccess: индексный доступ типизирован как string | undefined.
+    const { visuallyHidden } = hiddenStyles;
+    if (visuallyHidden === undefined) {
+      throw new Error('в VisuallyHidden.module.css нет класса .visuallyHidden');
+    }
+    const hints = screen.getAllByText(ru.scheme.linkHint);
+    expect(hints).toHaveLength(24);
+    for (const hint of hints) {
+      expect(hint).toHaveClass(visuallyHidden);
+      expect(hint.closest('[aria-hidden="true"]')).toBeNull();
+    }
   });
 });
 
