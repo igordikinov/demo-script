@@ -1,0 +1,74 @@
+/*
+ * Шапка A0 (SPEC §4.1:234–240): design/catalog-mockup.html:19–27 (стили),
+ * :88–95 (каталог A5), :185–199 (сценарий A0′); многоточие названия —
+ * design/Демо-навигатор v2.dc.html:30. Только var(--…) из tokens.css.
+ */
+
+/* CAT:19 */
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--dn-header-gap);
+  height: var(--dn-header-height);
+  padding: var(--dn-header-padding);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+  background: var(--scp-bg-surface);
+}
+
+/* CAT:20 */
+.monogram {
+  font-weight: var(--scp-font-weight-bold);
+  color: var(--brand-700);
+  letter-spacing: var(--dn-header-mono-tracking);
+}
+
+/* CAT:21 */
+.appTitle {
+  font-weight: var(--scp-font-weight-semi-bold);
+}
+
+/* CAT:22 — ссылка-кнопка: сброс стилей <button> из UA */
+.back {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--dn-header-crumb-gap);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--scp-color-neutral-600);
+  cursor: pointer;
+}
+
+/* CAT:23 */
+.back:hover,
+.back:focus-visible {
+  color: var(--brand-700);
+}
+
+/* CAT:187 */
+.backIcon {
+  flex: 0 0 auto;
+  width: var(--dn-header-icon-size);
+  height: var(--dn-header-icon-size);
+}
+
+/* CAT:24 */
+.separator {
+  color: var(--scp-color-neutral-300);
+}
+
+/* v2:30 */
+.title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* CAT:27 */
+.spacer {
+  flex: 1;
+}

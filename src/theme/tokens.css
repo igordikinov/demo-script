@@ -557,4 +557,21 @@
   --dn-card-caption-gap: 10px;
   /* Левая граница «Бизнес ценности» (v2:510, SPEC §4.4:277) */
   --dn-card-accent-width: 3px;
+
+  /* ------------------------------------------------------------------ */
+  /* Шапка (DN-10): design/catalog-mockup.html:19–24, :187; SPEC §4.1:236 */
+  /* ------------------------------------------------------------------ */
+
+  /* Высота шапки (CAT:19 height: 56px, §4.1:236) */
+  --dn-header-height: 56px;
+  /* Промежуток между элементами (CAT:19 gap: 12px) */
+  --dn-header-gap: var(--scp-spacing-md);
+  /* Горизонтальный отступ (CAT:19 padding: 0 24px) */
+  --dn-header-padding: 0 var(--scp-spacing-2xl);
+  /* Разрядка монограммы In· (CAT:20 letter-spacing: .02em) */
+  --dn-header-mono-tracking: 0.02em;
+  /* Промежуток шеврон — «Сценарии» (CAT:22 gap: 4px) */
+  --dn-header-crumb-gap: var(--scp-spacing-xs);
+  /* Шеврон ‹ (CAT:187 svg 16×16) */
+  --dn-header-icon-size: 16px;
 }
