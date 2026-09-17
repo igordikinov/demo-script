@@ -1,6 +1,7 @@
 /*
  * Кнопка md: design/catalog-mockup.html (.btn) и правила .scp-btn из
- * design/_ds/.../_ds_bundle.js (Button.jsx). Только var(--…) из tokens.css.
+ * design/_ds/.../_ds_bundle.js (Button.jsx); sm и ghost-destructive —
+ * .icon-btn из catalog-mockup. Только var(--…) из tokens.css.
  */
 
 .button {
@@ -115,5 +116,36 @@
 .button[data-variant='neutral']:disabled {
   background: var(--scp-background-primary);
   border-color: var(--scp-border-neutral-disable);
+  color: var(--scp-text-neutral-disable);
+}
+
+/* sm — 32 px (--scp-btn-height-sm); с iconOnly — квадрат 32×32 (CAT:33 .icon-btn). */
+.button[data-size='sm'] {
+  height: var(--scp-btn-height-sm);
+}
+
+.button[data-size='sm'][data-icon-only='true'] {
+  width: var(--scp-btn-height-sm);
+}
+
+/*
+ * ghost-destructive — корзина «Удалить из браузера» (§4.2:253, CAT:33–34
+ * .icon-btn): без рамки и фона, иконка --text-3; при наведении и фокусе с
+ * клавиатуры — фон холста и цвет danger.
+ */
+.button[data-variant='ghost-destructive'] {
+  border: 0;
+  background: transparent;
+  color: var(--scp-color-neutral-500);
+}
+
+.button[data-variant='ghost-destructive']:hover:not(:disabled),
+.button[data-variant='ghost-destructive']:focus-visible:not(:disabled) {
+  background: var(--scp-bg-canvas);
+  color: var(--scp-color-error-700);
+}
+
+.button[data-variant='ghost-destructive']:disabled {
+  background: transparent;
   color: var(--scp-text-neutral-disable);
 }
