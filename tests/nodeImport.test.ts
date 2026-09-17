@@ -24,3 +24,22 @@ describe('node --experimental-strip-types может импортировать 
     expect(out.trim()).toBe('ok');
   });
 });
+
+// Тот же сторож для src/excel/write.ts (план DN-04): npm run fixture (DN-08)
+// запускается через node --experimental-strip-types и должен уметь напрямую
+// импортировать .ts-модуль с расширением, без сборки.
+describe('node --experimental-strip-types может импортировать src/excel/write.ts', () => {
+  it('writeWorkbook отдаёт непустой Uint8Array', { timeout: 30_000 }, () => {
+    const script =
+      "const w=await import('./src/excel/write.ts');" +
+      "const bytes=await w.writeWorkbook([{name:'S',rows:[['1.10']]}]);" +
+      'if(!(bytes instanceof Uint8Array)||bytes.length===0)process.exit(2);' +
+      "console.log('ok')";
+    const out = execFileSync(
+      process.execPath,
+      ['--experimental-strip-types', '--no-warnings', '--input-type=module', '-e', script],
+      { cwd: root, encoding: 'utf8' },
+    );
+    expect(out.trim()).toBe('ok');
+  });
+});

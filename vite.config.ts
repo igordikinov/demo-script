@@ -6,4 +6,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   base: './',
   plugins: [react()],
+  build: {
+    // dist/.vite/manifest.json — по нему scripts/size.ts находит стартовый
+    // набор чанков (SPEC §8:427).
+    manifest: true,
+  },
 });

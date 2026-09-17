@@ -67,4 +67,32 @@ describe('eslint rules', { timeout: 30_000 }, () => {
     expect(await eslint.isPathIgnored('design/support.js')).toBe(true);
     expect(await eslint.isPathIgnored('.beads/x.js')).toBe(true);
   });
+
+  // SPEC §1:20, CLAUDE.md:33 — SheetJS только через import('xlsx') в
+  // src/excel/xlsx.ts (план DN-04, D1): без исключения из правила для этого
+  // файла, иначе статический импорт значения протащил бы SheetJS в чанк
+  // любого, кто импортирует loadXlsx.
+  it.each([
+    ['src/x.ts', "import * as XLSX from 'xlsx';\nexport const u = XLSX.utils;\n"],
+    ['src/x.ts', "import { utils } from 'xlsx';\nexport const u = utils;\n"],
+    ['src/x.ts', "export * from 'xlsx';\n"],
+    ['src/x.ts', "import { read } from 'xlsx/xlsx.mjs';\nexport const r = read;\n"],
+    // Тот же файл, что содержит loadXlsx, — исключения нет (D1).
+    ['src/excel/xlsx.ts', "import { read } from 'xlsx';\nexport const r = read;\n"],
+  ])('xlsx статический импорт значения — ошибка %s', async (filePath, code) => {
+    const m = await lint(code, filePath);
+    expect(ids(m)).toContain('@typescript-eslint/no-restricted-imports');
+    expect(ids(m)).not.toContain(null);
+  });
+
+  it.each([
+    ['src/excel/xlsx.ts', "import type { WorkBook } from 'xlsx';\nexport type X2 = WorkBook;\n"],
+    ['src/excel/xlsx.ts', "export async function f() { return import('xlsx'); }\n"],
+    ['src/excel/xlsx.ts', "export type X = typeof import('xlsx');\n"],
+    ['tests/probe.test.ts', "import { read } from 'xlsx';\nexport const r = read;\n"],
+  ])('xlsx без ошибки: типы, динамический импорт, tests/** %s', async (filePath, code) => {
+    const m = await lint(code, filePath);
+    expect(ids(m)).not.toContain('@typescript-eslint/no-restricted-imports');
+    expect(ids(m)).not.toContain(null);
+  });
 });

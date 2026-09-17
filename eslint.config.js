@@ -10,6 +10,8 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 // '#root' и HTML-сущности вида '&#123'. В регэкспе esquery нельзя '/'.
 const HEX = '(?:^|[^&\\w])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![\\w-])';
 const HEX_MESSAGE = 'Хардкод hex-цвета запрещён — используйте переменные из src/theme/tokens.css.';
+const XLSX_MESSAGE =
+  'SheetJS — только динамическим импортом: loadXlsx() из src/excel/xlsx.ts; типы — import type.';
 
 export default defineConfig(
   // Flat config не читает .gitignore. design/ — макет (только чтение), его
@@ -76,6 +78,23 @@ export default defineConfig(
               message: 'src/** уезжает в браузер: встроенные модули Node в бандле недоступны.',
             },
           ],
+        },
+      ],
+    },
+  },
+  {
+    // SPEC §1:20, CLAUDE.md: SheetJS — только динамическим импортом через
+    // loadXlsx() (src/excel/xlsx.ts), иначе он попадёт в стартовый чанк.
+    // Типы — import type (стираются). Исключения для src/excel/xlsx.ts нет:
+    // import('xlsx') правило пропускает, а статический импорт значения там
+    // утащил бы SheetJS в чанк любого, кто импортирует loadXlsx.
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [{ name: 'xlsx', message: XLSX_MESSAGE, allowTypeImports: true }],
+          patterns: [{ group: ['xlsx/*'], message: XLSX_MESSAGE, allowTypeImports: true }],
         },
       ],
     },
