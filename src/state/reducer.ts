@@ -19,7 +19,8 @@ export type ModalState = { kind: 'import' } | { kind: 'delete'; scenarioId: stri
 
 /**
  * Тост. `seq` растёт на каждый `showToast`, даже с тем же текстом: потребитель
- * передаёт его в `key` компонента Toast, чтобы отсчёт начался заново.
+ * передаёт его в проп `restartKey` компонента Toast, чтобы отсчёт начался заново
+ * без пересоздания региона `role="status"`.
  */
 export interface ToastState {
   message: string;
