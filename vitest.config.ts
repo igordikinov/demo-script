@@ -1,7 +1,7 @@
 import { configDefaults, defineConfig } from 'vitest/config';
 
-// Самостоятельный конфиг: vitest 2 работает на своём vite 5, поэтому без
-// mergeConfig с vite.config.ts и без plugin-react.
+// Самостоятельный конфиг: без mergeConfig с vite.config.ts и без plugin-react.
+// vitest 4 работает на vite 6 проекта (своей копии vite у него нет).
 export default defineConfig({
   test: {
     environment: 'jsdom',
