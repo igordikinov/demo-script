@@ -11,10 +11,25 @@ import { createInitialState, type AppState } from '../src/state/reducer';
 
 describe('useAppStore: вызван вне StoreProvider', () => {
   it('бросает ошибку с упоминанием StoreProvider', () => {
-    // renderHook пишет упавшую ошибку в console.error — заглушаем на время теста.
+    // renderHook пишет упавшую ошибку в console.error («The above error occurred…») —
+    // заглушаем на время теста. React 18 в dev-режиме дополнительно перебрасывает
+    // ошибку рендера через синтетическое событие window 'error'; jsdom (VirtualConsole)
+    // в vitest 4 сам печатает её в stderr как «Uncaught», это событие не перехватывается
+    // существующим console.error-шпионом. preventDefault() помечает событие обработанным
+    // для jsdom (reportException не эмитит jsdomError), а throw из useAppStore при этом
+    // не подавляется.
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => renderHook(() => useAppStore())).toThrow(/StoreProvider/);
-    consoleError.mockRestore();
+    const onError = vi.fn((event: ErrorEvent) => {
+      event.preventDefault();
+    });
+    window.addEventListener('error', onError);
+    try {
+      expect(() => renderHook(() => useAppStore())).toThrow(/StoreProvider/);
+      expect(onError).toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('error', onError);
+      consoleError.mockRestore();
+    }
   });
 });
 
