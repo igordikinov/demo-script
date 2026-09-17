@@ -3,8 +3,10 @@
 // тост: новый текст заменяет текущий и перезапускает отсчёт.
 //
 // Live-регион role="status" рендерится всегда, даже без текста, — иначе
-// скринридер может не заметить появившийся текст. Состояние тоста хранит
-// родитель: onDismiss должен сбросить message в null.
+// скринридер может не заметить появившийся текст. Регион живёт всё время
+// жизни компонента и не пересоздаётся: родитель не ставит key на Toast, для
+// повтора того же текста есть restartKey. Состояние тоста хранит родитель:
+// onDismiss должен сбросить message в null.
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Toast.module.css';
@@ -18,14 +20,24 @@ export interface ToastProps {
   onDismiss: () => void;
   /** По умолчанию 3200 мс (SPEC §4.8:346). */
   durationMs?: number;
+  /**
+   * Новое значение при том же `message` перезапускает отсчёт и заменяет
+   * внутренний узел; регион `role="status"` не пересоздаётся.
+   */
+  restartKey?: string | number;
 }
 
 /**
- * Таймер зависит только от `message` и `durationMs`: смена функции
+ * Таймер зависит от `message`, `durationMs` и `restartKey`: смена функции
  * `onDismiss` отсчёт не сбрасывает. Чтобы показать тот же текст ещё раз
- * с полным отсчётом, родитель передаёт новый `key`.
+ * с полным отсчётом, родитель передаёт новый `restartKey`.
  */
-export function Toast({ message, onDismiss, durationMs = DEFAULT_DURATION_MS }: ToastProps) {
+export function Toast({
+  message,
+  onDismiss,
+  durationMs = DEFAULT_DURATION_MS,
+  restartKey,
+}: ToastProps) {
   const onDismissRef = useRef(onDismiss);
 
   useEffect(() => {
@@ -42,11 +54,15 @@ export function Toast({ message, onDismiss, durationMs = DEFAULT_DURATION_MS }: 
     return () => {
       clearTimeout(timer);
     };
-  }, [message, durationMs]);
+  }, [message, durationMs, restartKey]);
 
   return createPortal(
     <div role="status" className={styles.region}>
-      {message !== null && <div className={styles.toast}>{message}</div>}
+      {message !== null && (
+        <div key={restartKey} className={styles.toast}>
+          {message}
+        </div>
+      )}
     </div>,
     document.body,
   );

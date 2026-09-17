@@ -14,9 +14,9 @@ export function AppShell() {
     <>
       <Header />
       <main />
-      {/* key={seq}: повторный тост с тем же текстом перезапускает отсчёт (Toast.tsx:23–27). */}
+      {/* restartKey={seq}: повтор того же текста перезапускает отсчёт; key не ставить — пересоздаст живой регион role="status". */}
       <Toast
-        key={toast?.seq}
+        restartKey={toast?.seq}
         message={toast?.message ?? null}
         onDismiss={() => {
           dispatch({ type: 'dismissToast' });
