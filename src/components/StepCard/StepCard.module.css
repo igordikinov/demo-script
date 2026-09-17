@@ -45,19 +45,6 @@
   border-bottom: 1px solid var(--scp-color-neutral-100);
 }
 
-/* Подпись секции: 12/16, 600, верхний регистр (SPEC §5:360). */
-.caption {
-  font: var(--scp-xs-semibold), sans-serif;
-  text-transform: uppercase;
-  letter-spacing: var(--dn-tracking-caption);
-  color: var(--scp-color-neutral-600);
-}
-
-/* Подпись «Бизнес ценность» (v2:153). */
-.caption[data-tone='brand'] {
-  color: var(--scp-color-brand-800);
-}
-
 /* Строка экрана (v2:104 — с url, v2:116 — без url). */
 .screenRow {
   display: flex;

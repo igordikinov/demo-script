@@ -10,7 +10,7 @@ import { useAppStore } from '../../state/context.ts';
 import { ru } from '../../i18n/ru.ts';
 import { Badge } from '../ui/Badge.tsx';
 import { Button } from '../ui/Button.tsx';
-import { ChevronLeftIcon, UploadIcon } from './icons.tsx';
+import { ChevronLeftIcon, UploadIcon } from '../ui/icons.tsx';
 import styles from './Header.module.css';
 
 export function Header() {

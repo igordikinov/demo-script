@@ -18,14 +18,6 @@
   padding-bottom: var(--scp-spacing-lg);
 }
 
-.title {
-  margin: 0;
-  font: var(--scp-xs-semibold), sans-serif;
-  text-transform: uppercase;
-  letter-spacing: var(--dn-tracking-caption);
-  color: var(--scp-color-neutral-600);
-}
-
 .summary {
   margin-inline-start: auto;
   font: var(--scp-xs-regular), sans-serif;

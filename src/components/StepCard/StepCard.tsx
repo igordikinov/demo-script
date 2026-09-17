@@ -6,6 +6,8 @@ import { activeStep, stepPosition } from '../../state/reducer.ts';
 import { ru } from '../../i18n/ru.ts';
 import { isScreenUrl } from '../../model/url.ts';
 import { Button } from '../ui/Button.tsx';
+import { ExternalLinkIcon } from '../ui/icons.tsx';
+import { SectionCaption } from '../ui/SectionCaption.tsx';
 import styles from './StepCard.module.css';
 
 export function StepCard() {
@@ -52,7 +54,7 @@ export function StepCard() {
       </header>
 
       <section className={styles.section}>
-        <h2 className={styles.caption}>{ru.card.screen}</h2>
+        <SectionCaption as="h2">{ru.card.screen}</SectionCaption>
         <div className={styles.screenRow} data-has-url={String(hasUrl)}>
           {step.screen !== '' && <span>{step.screen}</span>}
           {hasUrl ? (
@@ -70,20 +72,20 @@ export function StepCard() {
 
       {step.action !== '' && (
         <section className={styles.section}>
-          <h2 className={styles.caption}>{ru.card.action}</h2>
+          <SectionCaption as="h2">{ru.card.action}</SectionCaption>
           <p className={styles.text}>{step.action}</p>
         </section>
       )}
 
       <section className={styles.value} data-empty={String(valueEmpty)}>
-        <h2 className={styles.caption} data-tone="brand">
+        <SectionCaption as="h2" tone="brand">
           {ru.card.value}
-        </h2>
+        </SectionCaption>
         <p className={styles.valueText}>{valueEmpty ? ru.card.valueEmpty : step.value}</p>
       </section>
 
       <section className={styles.result}>
-        <h2 className={styles.caption}>{ru.card.result}</h2>
+        <SectionCaption as="h2">{ru.card.result}</SectionCaption>
         <p className={resultEmpty ? `${styles.text} ${styles.muted}` : styles.text}>
           {resultEmpty ? ru.card.resultEmpty : step.result}
         </p>
@@ -91,29 +93,10 @@ export function StepCard() {
 
       {step.comment !== '' && (
         <section className={styles.comment}>
-          <h2 className={styles.caption}>{ru.card.comment}</h2>
+          <SectionCaption as="h2">{ru.card.comment}</SectionCaption>
           <p className={styles.commentText}>{step.comment}</p>
         </section>
       )}
     </article>
-  );
-}
-
-/** Внешняя ссылка (v2:109); размер задаёт .icon в Button.module.css. */
-function ExternalLinkIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <path d="M15 3h6v6" />
-      <path d="M10 14L21 3" />
-    </svg>
   );
 }

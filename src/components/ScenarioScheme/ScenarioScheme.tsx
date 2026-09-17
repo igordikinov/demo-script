@@ -7,7 +7,8 @@ import { ru } from '../../i18n/ru.ts';
 import { isScreenUrl } from '../../model/url.ts';
 import { useAppStore } from '../../state/context.ts';
 import { flatSteps } from '../../state/reducer.ts';
-import { ArrowRightIcon, ExternalLinkIcon } from './icons.tsx';
+import { ArrowRightIcon, ExternalLinkIcon } from '../ui/icons.tsx';
+import { SectionCaption } from '../ui/SectionCaption.tsx';
 import styles from './ScenarioScheme.module.css';
 
 export function ScenarioScheme() {
@@ -33,9 +34,9 @@ export function ScenarioScheme() {
   return (
     <section className={styles.strip} aria-labelledby={titleId}>
       <div className={styles.header}>
-        <h2 id={titleId} className={styles.title}>
+        <SectionCaption as="h2" id={titleId}>
           {ru.scheme.title}
-        </h2>
+        </SectionCaption>
         <span className={styles.summary}>{ru.scheme.summary(steps.length, withLink)}</span>
       </div>
       <div className={styles.row}>

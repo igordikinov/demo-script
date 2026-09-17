@@ -1,0 +1,18 @@
+/*
+ * Подпись секции (SPEC §5:360): 12/16, 600, верхний регистр, .04em.
+ * margin: 0 — для h3 и прочих тегов, которых нет в сбросе global.css.
+ * Только var(--…) из tokens.css.
+ */
+
+.caption {
+  margin: 0;
+  font: var(--scp-xs-semibold), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: var(--dn-tracking-caption);
+  color: var(--scp-color-neutral-600);
+}
+
+/* «Бизнес ценность» (v2:153). */
+.caption[data-tone='brand'] {
+  color: var(--scp-color-brand-800);
+}
