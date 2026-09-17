@@ -4,6 +4,7 @@
 import { useAppStore } from '../../state/context.ts';
 import { activeStep, stepPosition } from '../../state/reducer.ts';
 import { ru } from '../../i18n/ru.ts';
+import { isScreenUrl } from '../../model/url.ts';
 import { Button } from '../ui/Button.tsx';
 import styles from './StepCard.module.css';
 
@@ -18,15 +19,23 @@ export function StepCard() {
     return null;
   }
 
+  // Ссылка не http(s) (E07, §3.5:183) считается отсутствующей: «Экран не указан»,
+  // без кнопки и серого URL. Решение владельца DN-dkb; схема §3.1 не меняется.
+  const hasUrl = isScreenUrl(step.url);
+
   // §4.9:350 и ТК 16 дословно: null в ответ — тост. Вызов и проверка в одном
   // месте: с 'noopener' браузер возвращает null и при открытой вкладке (план DN-12, В0).
+  // Повторная проверка адреса — страховка: обработчик вешается только при hasUrl,
+  // поэтому из DOM эта ветка недостижима и тестами не ловится (план DN-dkb, D2).
   const handleOpen = () => {
+    if (!isScreenUrl(step.url)) {
+      return;
+    }
     if (window.open(step.url, '_blank', 'noopener') === null) {
       dispatch({ type: 'showToast', message: ru.openScreen.popupBlocked });
     }
   };
 
-  const hasUrl = step.url !== '';
   const valueEmpty = step.value === '';
   const resultEmpty = step.result === '';
 

@@ -25,7 +25,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { StoreProvider } from '../src/state/store';
 import { appReducer, createInitialState, flatSteps } from '../src/state/reducer';
-import { ScenarioSchema, type Scenario } from '../src/model/schema';
+import { ScenarioSchema, type Scenario, type Step } from '../src/model/schema';
 import { ru } from '../src/i18n/ru';
 import { ScenarioScheme } from '../src/components/ScenarioScheme/ScenarioScheme';
 import fixtureJson from './fixtures/deployment-demo.json';
@@ -81,10 +81,23 @@ afterEach(() => {
   Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
 });
 
-function renderScheme(stepId = '1.10') {
+/** Копия сценария с изменённым одним шагом; исходный `scenario` не мутируется.
+ * Копия tests/StepCard.test.tsx:87–95 (план DN-dkb, D3) — общий хелпер не
+ * заводим, чтобы не конфликтовать с параллельными задачами при мёрже. */
+function withStep(source: Scenario, stepId: string, patch: Partial<Step>): Scenario {
+  return {
+    ...source,
+    blocks: source.blocks.map((block) => ({
+      ...block,
+      steps: block.steps.map((step) => (step.id === stepId ? { ...step, ...patch } : step)),
+    })),
+  };
+}
+
+function renderScheme(stepId = '1.10', source: Scenario = scenario) {
   const initialState = appReducer(createInitialState(), {
     type: 'openScenario',
-    scenario,
+    scenario: source,
     stepId,
   });
   return render(
@@ -183,6 +196,28 @@ describe('ScenarioScheme: список шагов (SPEC §4.3:265)', () => {
         .find((candidate) => candidate.getAttribute('data-step-id') === step.id);
       expect(button).toHaveAttribute('title', step.title);
     }
+  });
+
+  it('url «испорчен» (javascript:) у активного шага 1.10 — считается «нет ссылки»: сводка «23 со ссылкой», без иконки и data-link (решение владельца DN-dkb)', () => {
+    const step = steps.find((candidate) => candidate.id === '1.10');
+    if (step === undefined) {
+      throw new Error('фикстура не знает шаг 1.10');
+    }
+    expect(step.url.startsWith('https://')).toBe(true);
+    const patched = withStep(scenario, '1.10', { url: 'javascript:alert(1)' });
+
+    const { container } = renderScheme('1.10', patched);
+    const region = screen.getByRole('region', { name: ru.scheme.title });
+    expect(within(region).getByText(ru.scheme.summary(29, 23))).toBeInTheDocument();
+    expect(within(region).queryByText(ru.scheme.summary(29, 24))).not.toBeInTheDocument();
+
+    const button = container.querySelector('[data-step-id="1.10"]');
+    if (button === null) {
+      throw new Error('кнопка шага 1.10 не найдена');
+    }
+    expect(button.querySelector('svg[data-icon="external-link"]')).toBeNull();
+    expect(button).not.toHaveAttribute('data-link');
+    expect(container.querySelectorAll('svg[data-icon="external-link"]')).toHaveLength(23);
   });
 });
 

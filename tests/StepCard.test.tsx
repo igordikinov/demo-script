@@ -218,6 +218,29 @@ describe('StepCard: секция «Экран»', () => {
       within(section).queryByRole('button', { name: ru.card.openScreen }),
     ).not.toBeInTheDocument();
   });
+
+  it('1.10 с испорченным url (javascript:) — считается «нет url»: «Экран не указан», без кнопки и без URL, window.open не вызывается (решение владельца DN-dkb)', () => {
+    const step = findStep(scenario, '1.10');
+    expect(step.url.startsWith('https://')).toBe(true);
+    const patched = withStep(scenario, '1.10', { url: 'javascript:alert(1)' });
+    // Схема (SPEC §3.1) протокол url не проверяет — испорченный адрес проходит
+    // zod, и именно эта угроза — предмет задачи DN-dkb.
+    expect(ScenarioSchema.safeParse(patched).success).toBe(true);
+    // Шпион ставится до рендера (план DN-dkb, D4): если бы кнопка «Открыть
+    // экран» всё же отрисовалась, клика по ней в тесте нет, и проверка
+    // openSpy имеет смысл только вместе с проверкой отсутствия кнопки ниже.
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+
+    const { container } = renderCard(patched, '1.10');
+    const section = screenSectionOf(container);
+
+    expect(within(section).getByText(ru.card.screenMissing)).toBeInTheDocument();
+    expect(within(section).getByText(step.screen)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: ru.card.openScreen })).not.toBeInTheDocument();
+    expect(within(section).queryByText('javascript:alert(1)')).not.toBeInTheDocument();
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(screen.getByTestId('toast-probe').textContent).toBe('');
+  });
 });
 
 describe('StepCard: секция «Бизнес ценность» и «Ожидаемый результат» — заполнены (SPEC §4.4:277–278)', () => {

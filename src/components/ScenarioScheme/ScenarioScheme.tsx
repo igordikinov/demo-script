@@ -4,6 +4,7 @@
 // (§4.3:267, §11 вопрос 5). В каталоге (сценарий не открыт) ничего не рисует.
 import { useEffect, useId, useRef } from 'react';
 import { ru } from '../../i18n/ru.ts';
+import { isScreenUrl } from '../../model/url.ts';
 import { useAppStore } from '../../state/context.ts';
 import { flatSteps } from '../../state/reducer.ts';
 import { ArrowRightIcon, ExternalLinkIcon } from './icons.tsx';
@@ -26,7 +27,8 @@ export function ScenarioScheme() {
   }
 
   const steps = flatSteps(scenario);
-  const withLink = steps.filter((step) => step.url !== '').length;
+  // «Со ссылкой» — только http(s), как в карточке (E07 §3.5:183, решение DN-dkb).
+  const withLink = steps.filter((step) => isScreenUrl(step.url)).length;
 
   return (
     <section className={styles.strip} aria-labelledby={titleId}>
@@ -55,7 +57,7 @@ export function ScenarioScheme() {
               <ol className={styles.steps}>
                 {block.steps.map((step) => {
                   const active = step.id === stepId;
-                  const hasLink = step.url !== '';
+                  const hasLink = isScreenUrl(step.url);
                   return (
                     <li key={step.id}>
                       <button
