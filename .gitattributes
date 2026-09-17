@@ -1,0 +1,28 @@
+# Окончания строк.
+#
+# ЗАЧЕМ. В репозитории core.autocrlf=true, и без этого файла `git checkout`
+# на Windows записывал бы текстовые файлы с CRLF. Prettier проверяет
+# endOfLine lf, поэтому `npm run check` (`prettier --check .`) краснел бы
+# сразу после клона — на файлах, которые никто не правил.
+#
+# Побочный эффект: пропадает предупреждение «LF will be replaced by CRLF»,
+# которое git печатал на каждый add.
+
+* text=auto eol=lf
+
+# Скрипты, которые запускаются напрямую: CRLF ломает шебанг.
+*.sh          text eol=lf
+.beads/hooks/* text eol=lf
+
+# Двоичное — не трогать. Сценарии Excel (scenarios/*.xlsx) нормализация
+# испортила бы молча.
+*.xlsx        binary
+*.woff        binary
+*.woff2       binary
+*.png         binary
+*.jpg         binary
+*.ico         binary
+
+# Отчёт Playwright и прочие артефакты прогонов в репозиторий не попадают
+# (см. .gitignore), но если попадут — не нормализовать.
+*.zip         binary

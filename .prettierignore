@@ -1,0 +1,27 @@
+# Артефакты сборки и прогонов.
+dist
+coverage
+playwright-report
+test-results
+node_modules
+public/scenarios
+
+# Макет — только чтение (CLAUDE.md «Чего не делать»).
+design/
+
+# Генерируется инструментами: переформатирование воевало бы с генератором.
+.beads/
+.agents/
+.codex/
+.claude/
+
+# Документы владельца; CLAUDE.md и AGENTS.md содержат управляемый блок beads,
+# prettier трогает и его, и пустые строки вокруг.
+PRD.md
+SPEC.md
+CLAUDE.md
+AGENTS.md
+
+# Эталонные данные — формат задаёт не prettier.
+tests/fixtures/
+scenarios/
