@@ -1,0 +1,213 @@
+/*
+ * Полоса «Схема сценария» (SPEC §4.3:259–267) — разметка
+ * design/Демо-навигатор v2.dc.html:45–80 и стили шага :450–474.
+ * Только var(--…) из tokens.css. Состояния шага — по aria-current и data-link.
+ */
+
+.strip {
+  background: var(--scp-bg-surface);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+  padding: var(--scp-spacing-xl) var(--scp-spacing-2xl) var(--scp-spacing-2xl);
+}
+
+/* v2:47–50 */
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--scp-spacing-lg);
+  padding-bottom: var(--scp-spacing-lg);
+}
+
+.title {
+  margin: 0;
+  font: var(--scp-xs-semibold), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: var(--dn-tracking-caption);
+  color: var(--scp-color-neutral-600);
+}
+
+.summary {
+  margin-inline-start: auto;
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-600);
+}
+
+/* v2:52 — при нехватке ширины полоса прокручивается, блоки не переносятся (§4.3:263). */
+.row {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+}
+
+/*
+ * v2:54. В макете у обёртки ещё min-width: 0 — тогда при узкой полосе она
+ * сжимается меньше «стрелка + колонка 220 px», колонки наезжают друг на друга
+ * и прокрутки нет. Без него минимум обёртки — её содержимое.
+ */
+.wrapper {
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 0;
+}
+
+/* v2:450–454, 56 */
+.connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--dn-scheme-connector-width);
+  color: var(--scp-color-neutral-300);
+}
+
+.connector svg {
+  width: var(--dn-scheme-arrow-size);
+  height: var(--dn-scheme-arrow-size);
+}
+
+/* v2:58 */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dn-scheme-block-gap);
+  flex: 1 1 0;
+  min-width: var(--dn-scheme-block-min-width);
+  padding: var(--scp-spacing-md) var(--scp-spacing-md) var(--scp-spacing-sm);
+  border: 1px solid var(--scp-color-neutral-100);
+  border-radius: var(--scp-border-radius-md);
+}
+
+/* v2:59–62 */
+.blockHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-sm);
+}
+
+.blockNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dn-scheme-block-number-size);
+  height: var(--dn-scheme-block-number-size);
+  border-radius: var(--scp-border-radius-sm);
+  background: var(--scp-color-brand-100);
+  color: var(--scp-color-brand-800);
+  font-size: var(--scp-font-sizes-12);
+  font-weight: var(--scp-font-weight-bold);
+}
+
+.blockTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--dn-scheme-text-size);
+  line-height: var(--scp-line-height-18);
+  font-weight: var(--scp-font-weight-semi-bold);
+  text-wrap: pretty;
+}
+
+.blockCount {
+  flex: 0 0 auto;
+  font-size: var(--scp-font-sizes-12);
+  color: var(--scp-color-neutral-500);
+}
+
+/* v2:64–65 — вертикальная линия через центры точек. */
+.steps {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--dn-scheme-dot-size) / 2);
+  top: var(--dn-scheme-line-inset);
+  bottom: var(--dn-scheme-line-inset);
+  width: 1px;
+  background: var(--scp-color-neutral-100);
+}
+
+/* v2:462–467 */
+.step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-sm);
+  width: 100%;
+  min-height: var(--dn-scheme-step-min-height);
+  padding: var(--dn-scheme-step-padding);
+  border: 0;
+  border-radius: var(--scp-border-radius-sm);
+  background: transparent;
+  color: var(--scp-content-primary);
+  font-size: var(--dn-scheme-text-size);
+  line-height: var(--scp-line-height-18);
+  text-align: left;
+  cursor: pointer;
+}
+
+.step[aria-current='step'] {
+  background: var(--brand-50);
+}
+
+/* v2:468–473 */
+.dot {
+  flex: 0 0 var(--dn-scheme-dot-size);
+  width: var(--dn-scheme-dot-size);
+  height: var(--dn-scheme-dot-size);
+  border: var(--dn-scheme-dot-border-width) solid var(--scp-color-neutral-150);
+  border-radius: 50%;
+  background: var(--scp-color-neutral-0);
+  box-shadow: 0 0 0 var(--dn-scheme-dot-ring) var(--scp-color-neutral-0);
+}
+
+/* Точка неактивного шага со ссылкой темнее, чем без ссылки (§4.3:265). */
+.step[data-link='true'] .dot {
+  border-color: var(--scp-color-neutral-300);
+}
+
+/* Активный шаг — после правила data-link, чтобы перекрыть его. */
+.step[aria-current='step'] .dot {
+  border-color: var(--brand-700);
+  background: var(--brand-700);
+}
+
+/*
+ * v2:474. В макете ширина ровно 30 px; min-width вместо неё, чтобы номер
+ * вида «10.12» не залезал на заголовок.
+ */
+.number {
+  flex: 0 0 auto;
+  min-width: var(--dn-scheme-step-number-width);
+  white-space: nowrap;
+  color: var(--scp-color-neutral-500);
+  font-weight: var(--scp-font-weight-regular);
+  font-variant-numeric: tabular-nums;
+}
+
+.step[aria-current='step'] .number {
+  color: var(--brand-700);
+  font-weight: var(--scp-font-weight-semi-bold);
+}
+
+/* v2:70 — до двух строк, полный текст в title кнопки. */
+.stepTitle {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* v2:72 */
+.linkIcon {
+  flex: 0 0 auto;
+  width: var(--dn-scheme-link-icon-size);
+  height: var(--dn-scheme-link-icon-size);
+  color: var(--scp-color-neutral-300);
+}

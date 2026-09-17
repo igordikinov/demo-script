@@ -528,4 +528,20 @@
 
   /* Тост (design/Демо-навигатор v2.dc.html: bottom 32px) */
   --dn-toast-offset: var(--scp-spacing-3xl);
+
+  /* Схема сценария (DN-11): design/Демо-навигатор v2.dc.html:45–80, 450–474 */
+  --dn-scheme-block-min-width: 220px;
+  --dn-scheme-block-gap: 10px;
+  --dn-scheme-connector-width: 32px;
+  --dn-scheme-arrow-size: 16px;
+  --dn-scheme-block-number-size: 22px;
+  --dn-scheme-text-size: 13px;
+  --dn-scheme-line-inset: 14px;
+  --dn-scheme-step-min-height: 30px;
+  --dn-scheme-step-padding: 5px 6px 5px 0;
+  --dn-scheme-dot-size: 12px;
+  --dn-scheme-dot-border-width: 2px;
+  --dn-scheme-dot-ring: 3px;
+  --dn-scheme-step-number-width: 30px;
+  --dn-scheme-link-icon-size: 13px;
 }
