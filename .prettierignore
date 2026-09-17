@@ -25,3 +25,7 @@ AGENTS.md
 # Эталонные данные — формат задаёт не prettier.
 tests/fixtures/
 scenarios/
+
+# Снимки карты процесса (SPEC §3.4): формат задаёт scripts/pm-snapshot.ts,
+# tests/pmData.test.ts сверяет файл с serializeSnapshot байт в байт.
+src/data/pm/

@@ -1,0 +1,43 @@
+{
+  "map": "mrp",
+  "nodes": {
+    "analiz-preduprezhdeniy": 2,
+    "formirovanie-zayavok-na-zakupku": 1,
+    "ispravlenie-dannyh": 2,
+    "korrektirovka-zayavok": 3,
+    "osnovnye-i-tranzakcionnye-dannye-iz-erp": 1,
+    "peredacha-plana-v-vide-zayavok-na-zakupku-v-sistemu-ispolneniya-zakupok": 3,
+    "planovye-pervichnye-potrebnosti-i-drugie-vidy-potrebnostey": 1,
+    "planovye-zakazy-iz-snp-ps": 1,
+    "proverka-obespechennosti-bom": 3,
+    "raschet-brutto-i-netto-potrebnostey": 1,
+    "razuzlovanie-bom": 1,
+    "rekomendovannye-urovni-zapasov-iz-meio": 1,
+    "soglasovanie-izmeneniy": 3,
+    "soglasovanie-plana-zakupok": 3,
+    "sozdanie-alternativnyh-scenariev": 4,
+    "sravnenie-po-kpi-stoimost-riski-zapasy": 4,
+    "utverzhdenie-finalnogo-scenariya": 4
+  },
+  "snapshotAt": "2026-09-17",
+  "sourceUpdatedAt": "2026-09-01",
+  "stages": [
+    {
+      "number": 1,
+      "title": "Расчёт потребности"
+    },
+    {
+      "number": 2,
+      "title": "Обработка ошибок и предупреждений"
+    },
+    {
+      "number": 3,
+      "title": "Анализ и корректировка результатов"
+    },
+    {
+      "number": 4,
+      "title": "Сценарное планирование"
+    }
+  ],
+  "title": "Процесс планирования потребности в материалах"
+}
