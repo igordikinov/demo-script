@@ -5,7 +5,7 @@
 // что читает readWorkbook, поэтому байты настоящие, а не подделанные вручную.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { readWorkbook } from '../src/excel/read';
+import { readWorkbook, recoverUtf8 } from '../src/excel/read';
 import { writeWorkbook, type SheetSpec } from '../src/excel/write';
 import { LEVELS, type ReportRow } from '../src/excel/validate';
 import { ru } from '../src/i18n/ru';
@@ -43,6 +43,131 @@ describe('ТК 5 (SPEC §8:401): ячейка-гиперссылка с текс
     const urls = result.scenario?.blocks[0]?.steps.map((s) => s.url);
     expect(urls).toEqual([link, 'https://plain.example/x', 'https://target.example']);
     expect(result.summary.withLink).toBe(3);
+  });
+});
+
+describe('DN-13n (SPEC §3.3:138, ТК 5): цель гиперссылки с кириллицей читается без искажений', () => {
+  // Баг DN-04/DN-13n (история): писатель кладёт в rels корректный UTF-8, а старый
+  // linkTarget() отдавал cell.l.Target как есть — SheetJS при чтении rels отдаёт
+  // байты UTF-8, каждый поштучно перекодированный так, будто он был latin1
+  // (классическая мojibake). Исправление — recoverUtf8() (src/excel/read.ts:96-111),
+  // которую вызывает linkTarget() (src/excel/read.ts:117-120). Ожидание теста —
+  // исходный адрес, побайтово равный записанному через writeWorkbook.
+  it('кириллица в пути и в query читается как записана', async () => {
+    const link = 'https://stand.example/путь?q=узел';
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe(link);
+  });
+
+  it('одиночный не-ASCII символ из Latin-1 (café) читается как записан', async () => {
+    const link = 'https://ex.example/café';
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe(link);
+  });
+
+  it('ASCII-адрес не меняется', async () => {
+    const link = 'https://stand.example/app?a=1&b=2#frag';
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe(link);
+  });
+
+  it('percent-encoded кириллица (адрес после сохранения в Excel) не декодируется и не меняется', async () => {
+    const link = 'https://stand.example/%D0%BF%D1%83%D1%82%D1%8C?q=%D1%83%D0%B7%D0%B5%D0%BB';
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe(link);
+  });
+
+  // Пятый случай из плана DN-13n — «Latin-1-подобный адрес, который при обратном
+  // перекодировании в UTF-8 невалиден» (проверка от переисправления) — через
+  // writeWorkbook не собрать. Записывающая часть (write.ts:59) всегда отдаёт в rels
+  // корректный UTF-8 для любой JS-строки, поэтому её байты, поштучно прочитанные как
+  // latin1 (баг чтения) и затем поштучно перекодированные назад в UTF-8, гарантированно
+  // декодируются — это ровно те же байты, которыми исходная строка была закодирована.
+  // Не-UTF-8 байты в l.Target появились бы, только если вручную собрать zip/rels в
+  // обход writeWorkbook — и это запрещено инструкцией задачи («не подделывай»). Этот
+  // случай (и обе отсечки recoverUtf8) проверяется ниже прямым вызовом recoverUtf8,
+  // в обход writeWorkbook/readWorkbook.
+});
+
+describe('recoverUtf8 (SPEC §3.3:138, DN-13n): отсечки до TextDecoder — прямой вызов, в обход writeWorkbook', () => {
+  it('Latin-1-строка, чьи байты не образуют валидный UTF-8, не трогается ({ fatal: true })', () => {
+    // 'é' = U+00E9 → charCodeAt = 0xE9 = 1110 1001. По маске 1110xxxx это ведущий байт
+    // трёхбайтовой UTF-8-последовательности — за ним обязаны идти два продолжающих
+    // байта вида 10xxxxxx. В строке 'é' — последний символ, после него в bytes[] ничего
+    // нет, так что декодер получает 0xE9 без продолжения: валидной UTF-8-строки не
+    // существует. С { fatal: true } TextDecoder бросает исключение, и recoverUtf8
+    // возвращает переданную строку без изменений (в отличие от того же адреса,
+    // прошедшего через writeWorkbook/readWorkbook в ТК выше: там мojibake — это уже два
+    // отдельных байта 0xC3 0xA9, каждый из которых валиден как продолжение другого).
+    const link = 'https://ex.example/café';
+    expect(recoverUtf8(link)).toBe(link);
+  });
+
+  it('символ выше U+00FF (уже корректно декодированная кириллица) не трогается (code > 0xff)', () => {
+    // 'у' = U+0443 = 1091 — больше 0x00FF, в один байт не укладывается. Первый же
+    // такой символ обязан оборвать разбор и вернуть строку как есть: без этой отсечки
+    // charCodeAt('у') записался бы в Uint8Array с усечением до младшего байта (0x43),
+    // необратимо потеряв исходные данные.
+    const link = 'https://stand.example/узел';
+    expect(recoverUtf8(link)).toBe(link);
+  });
+
+  it('чистый ASCII не трогается (hasHighByte остаётся false)', () => {
+    // Все символы 'https://ex.example/plain?a=1&b=2#frag' — код ≤ 0x7f (буквы, цифры,
+    // ':', '/', '.', '?', '=', '&', '#'), значит hasHighByte ни разу не станет true, и
+    // функция вернёт исходную строку, не заходя в TextDecoder.
+    const link = 'https://ex.example/plain?a=1&b=2#frag';
+    expect(recoverUtf8(link)).toBe(link);
+  });
+
+  it('искажённая latin1-строка восстанавливается в исходный адрес', () => {
+    // Слово «путь» в UTF-8 (формула для U+0080–U+07FF: байт1 = 0xC0 | (cp >> 6),
+    // байт2 = 0x80 | (cp & 0x3F)):
+    //   п U+043F (0x043F >> 6 = 0x10, 0x043F & 0x3F = 0x3F) → 0xC0|0x10=0xD0, 0x80|0x3F=0xBF
+    //   у U+0443 (0x0443 >> 6 = 0x11, 0x0443 & 0x3F = 0x03) → 0xC0|0x11=0xD1, 0x80|0x03=0x83
+    //   т U+0442 (0x0442 >> 6 = 0x11, 0x0442 & 0x3F = 0x02) → 0xC0|0x11=0xD1, 0x80|0x02=0x82
+    //   ь U+044C (0x044C >> 6 = 0x11, 0x044C & 0x3F = 0x0C) → 0xC0|0x11=0xD1, 0x80|0x0C=0x8C
+    // Итого байты «путь» в UTF-8: D0 BF D1 83 D1 82 D1 8C. Баг SheetJS читает rels как
+    // latin1 — каждый байт становится отдельным символом с тем же кодом, что и
+    // собрано ниже через String.fromCharCode. Все восемь кодов ≤ 0xFF, и часть из них
+    // > 0x7F: обе отсечки recoverUtf8 пропускают строку дальше, TextDecoder видит
+    // ровно те байты, на которые раскладывается «путь» в UTF-8, и возвращает его.
+    const mojibake =
+      'https://stand.example/' +
+      String.fromCharCode(0xd0, 0xbf, 0xd1, 0x83, 0xd1, 0x82, 0xd1, 0x8c);
+    expect(recoverUtf8(mojibake)).toBe('https://stand.example/путь');
   });
 });
 

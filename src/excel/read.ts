@@ -77,11 +77,46 @@ function cellText(cell: CellObject | undefined): string {
 }
 
 /**
- * Цель гиперссылки ячейки (§3.3:138) — как есть, без trim и декодирования. Единственное
- * место чтения `l.Target`: адреса с кириллицей чинит DN-13n.
+ * Восстановление UTF-8 в цели гиперссылки (§3.3:138, DN-13n, найдено в DN-04). Причина
+ * существования функции — SheetJS 0.20.3 (§1): в `.rels` адрес лежит корректным UTF-8, но
+ * эта версия разбирает его побайтно, как latin1, и `.../путь` приходит как `.../Ð¿ÑƒÑ‚ÑŒ`.
+ * Обратно: коды символов — это и есть исходные байты, их читает TextDecoder.
+ *
+ * Трогаются только строки, где есть символы U+0080…U+00FF и нет ни одного выше U+00FF:
+ * чистый ASCII (в том числе percent-encoded адрес из файла, сохранённого Excel) в такой
+ * подмене не участвует, а символ выше U+00FF в байт не укладывается — значит, строку уже
+ * декодировали правильно. `fatal: true` обязателен: без него невалидные последовательности
+ * молча станут U+FFFD и настоящий latin1-адрес испортится, а так исключение оставит
+ * исходную строку.
+ *
+ * Экспорт — не для приложения (единственный вызов ниже, в linkTarget), а для тестов этих
+ * двух отсечек: через writeWorkbook их не достать, писатель всегда кладёт в `.rels`
+ * корректный UTF-8. Пригодится и любому будущему чтению `.rels` — пока SheetJS 0.20.3.
+ */
+export function recoverUtf8(target: string): string {
+  const bytes = new Uint8Array(target.length);
+  let hasHighByte = false;
+  for (let i = 0; i < target.length; i += 1) {
+    const code = target.charCodeAt(i);
+    if (code > 0xff) return target;
+    if (code > 0x7f) hasHighByte = true;
+    bytes[i] = code;
+  }
+  if (!hasHighByte) return target;
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return target;
+  }
+}
+
+/**
+ * Цель гиперссылки ячейки (§3.3:138) — без trim и percent-декодирования, единственное
+ * место чтения `l.Target`. Правится только кодировка (см. recoverUtf8, DN-13n).
  */
 function linkTarget(cell: CellObject | undefined): string | undefined {
-  return cell?.l?.Target;
+  const target = cell?.l?.Target;
+  return target === undefined ? undefined : recoverUtf8(target);
 }
 
 /** Имя файла без последнего расширения; у «.xlsx» точка в начале — имя остаётся целиком. */
