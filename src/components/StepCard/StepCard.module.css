@@ -1,0 +1,137 @@
+/*
+ * Карточка шага A3 — SPEC §4.4:269–281, разметка design/Демо-навигатор v2.dc.html:84–165,
+ * стили блоков «Бизнес ценность» и «Ожидаемый результат» — v2:507–519.
+ * Только var(--…) из tokens.css (tests/cssColors.test.ts).
+ */
+
+.card {
+  max-width: var(--dn-card-max-width);
+  padding: var(--scp-spacing-2xl);
+  border: 1px solid var(--scp-color-neutral-100);
+  border-radius: var(--scp-border-radius-md);
+  background: var(--scp-background-primary);
+}
+
+/* Шапка (v2:86–90); место справа — под ‹ › (DN-13). */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--scp-spacing-lg);
+  padding-bottom: var(--scp-spacing-lg);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.meta {
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-600);
+}
+
+.title {
+  margin: var(--dn-card-title-gap) 0 0;
+  font-size: var(--scp-font-sizes-24);
+  line-height: var(--scp-line-height-32);
+  font-weight: var(--scp-font-weight-semi-bold);
+  text-wrap: pretty;
+}
+
+/* Секции «Экран» и «Действие» (v2:101, :146). */
+.section {
+  padding: var(--scp-spacing-xl) 0;
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+}
+
+/* Подпись секции: 12/16, 600, верхний регистр (SPEC §5:360). */
+.caption {
+  font: var(--scp-xs-semibold), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: var(--dn-tracking-caption);
+  color: var(--scp-color-neutral-600);
+}
+
+/* Подпись «Бизнес ценность» (v2:153). */
+.caption[data-tone='brand'] {
+  color: var(--scp-color-brand-800);
+}
+
+/* Строка экрана (v2:104 — с url, v2:116 — без url). */
+.screenRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--scp-spacing-md);
+  margin-top: var(--dn-card-caption-gap);
+}
+
+.screenRow[data-has-url='false'] {
+  align-items: baseline;
+}
+
+/* URL под кнопкой (v2:113). */
+.url {
+  margin-top: var(--scp-spacing-sm);
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-500);
+  word-break: break-all;
+}
+
+.muted {
+  color: var(--scp-color-neutral-500);
+}
+
+/* Текст секции (v2:148, :517–519). */
+.text {
+  margin: var(--dn-card-caption-gap) 0 0;
+  text-wrap: pretty;
+}
+
+/* «Бизнес ценность» заполнена (v2:507–510, SPEC §4.4:277). */
+.value {
+  margin: var(--scp-spacing-xl) 0;
+  padding: var(--scp-spacing-xl) var(--scp-spacing-2xl);
+  border-left: var(--dn-card-accent-width) solid var(--brand-700);
+  border-radius: 0 var(--scp-border-radius-sm) var(--scp-border-radius-sm) 0;
+  background: var(--brand-50);
+}
+
+/* «Бизнес ценность» пуста: белый фон, пунктир (v2:508–510, SPEC §4.4:277). */
+.value[data-empty='true'] {
+  border-left-style: dashed;
+  border-left-color: var(--brand-200);
+  background: var(--scp-background-primary);
+}
+
+.valueText {
+  margin: var(--scp-spacing-md) 0 0;
+  font-size: var(--scp-font-sizes-18);
+  line-height: var(--scp-line-height-28);
+  text-wrap: pretty;
+}
+
+.value[data-empty='true'] .valueText {
+  font-size: var(--scp-font-sizes-14);
+  line-height: var(--scp-line-height-20);
+  color: var(--scp-color-neutral-500);
+}
+
+/* «Ожидаемый результат» (v2:157). */
+.result {
+  padding: 0 0 var(--scp-spacing-xl);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+}
+
+/* «Комментарий» (v2:163–165). */
+.comment {
+  padding: var(--scp-spacing-xl) 0 0;
+}
+
+.commentText {
+  margin: var(--dn-card-caption-gap) 0 0;
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-600);
+  text-wrap: pretty;
+}
