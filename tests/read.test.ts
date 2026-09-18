@@ -3,6 +3,10 @@
 // ТК 5, 6, 7, 9 (SPEC §8:401-405, дословно) плюс сопутствующие случаи §3.3 из
 // плана DN-05 (раздел 3.C). Книги собираются writeWorkbook — та же SheetJS,
 // что читает readWorkbook, поэтому байты настоящие, а не подделанные вручную.
+// DN-06 добавила readWorkbook третий параметр snapshots и проверки по шагам
+// (E04-E07, W01, W02, W04, I03) — здесь эти книги без колонки «Ссылка»
+// поэтому дополнительно получают W02 на каждом шаге; сами проверки §3.5 и
+// сортировка отчёта разобраны в tests/validate.test.ts.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { readWorkbook, recoverUtf8 } from '../src/excel/read';
@@ -10,15 +14,30 @@ import { writeWorkbook, type SheetSpec } from '../src/excel/write';
 import { LEVELS, type ReportRow } from '../src/excel/validate';
 import { ru } from '../src/i18n/ru';
 import { ScenarioSchema } from '../src/model/schema';
+import { PmSnapshotSchema, type PmSnapshots } from '../src/pm/snapshot';
 
 const HEAD = ['№ шага', 'Шаг'];
 
 const ZERO_SUMMARY = { sheets: 0, blocks: 0, steps: 0, withLink: 0, withNode: 0 };
 
+/** Настоящие снимки карт (как в tests/pmData.test.ts:12-17) — эти тесты не проверяют W04/I03. */
+const SNAPSHOTS: PmSnapshots = {
+  snp: PmSnapshotSchema.parse(
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL('../src/data/pm/snp.json', import.meta.url)), 'utf8'),
+    ),
+  ),
+  mrp: PmSnapshotSchema.parse(
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL('../src/data/pm/mrp.json', import.meta.url)), 'utf8'),
+    ),
+  ),
+};
+
 /** Собирает книгу writeWorkbook и тут же читает её readWorkbook (план 3.C). */
 async function read(sheets: SheetSpec[], fileName = 'demo.xlsx') {
   const bytes = await writeWorkbook(sheets);
-  return readWorkbook(bytes.slice().buffer, fileName);
+  return readWorkbook(bytes.slice().buffer, fileName, SNAPSHOTS);
 }
 
 /** Строки отчёта без уровня info — так короче сверять danger/warning (план 3.C). */
@@ -50,8 +69,8 @@ describe('DN-13n (SPEC §3.3:138, ТК 5): цель гиперссылки с к
   // Баг DN-04/DN-13n (история): писатель кладёт в rels корректный UTF-8, а старый
   // linkTarget() отдавал cell.l.Target как есть — SheetJS при чтении rels отдаёт
   // байты UTF-8, каждый поштучно перекодированный так, будто он был latin1
-  // (классическая мojibake). Исправление — recoverUtf8() (src/excel/read.ts:96-111),
-  // которую вызывает linkTarget() (src/excel/read.ts:117-120). Ожидание теста —
+  // (классическая мojibake). Исправление — recoverUtf8() (src/excel/read.ts:107-122),
+  // которую вызывает linkTarget() (src/excel/read.ts:128-131). Ожидание теста —
   // исходный адрес, побайтово равный записанному через writeWorkbook.
   it('кириллица в пути и в query читается как записана', async () => {
     const link = 'https://stand.example/путь?q=узел';
@@ -209,6 +228,8 @@ describe('ТК 6 (SPEC §8:402): строка заголовков и назва
       { name: 'Плохой', rows },
       { name: 'Хороший', rows: [HEAD, ['1', 'x']] },
     ]);
+    // 'Хороший' без колонки «Ссылка» → у его единственного шага url === '' → W02
+    // (SPEC §3.5:185, DN-06); E03 — danger, сортируется раньше (SPEC §3.5:195).
     expect(withoutInfo(result.report)).toEqual([
       {
         level: 'danger',
@@ -216,6 +237,13 @@ describe('ТК 6 (SPEC §8:402): строка заголовков и назва
         sheet: 'Плохой',
         row: null,
         message: ru.report.codes.E03(),
+      },
+      {
+        level: 'warning',
+        code: 'W02',
+        sheet: 'Хороший',
+        row: 2,
+        message: ru.report.codes.W02(),
       },
     ]);
     expect(result.scenario).toBeUndefined();
@@ -227,7 +255,11 @@ describe('ТК 6 (SPEC §8:402): строка заголовков и назва
       { name: 'Пусто', rows: [] },
       { name: 'Хороший', rows: [HEAD, ['1', 'x']] },
     ]);
-    expect(withoutInfo(result.report).map((r) => [r.code, r.sheet])).toEqual([['E03', 'Пусто']]);
+    // 'Хороший' без «Ссылки» даёт W02 на своём единственном шаге (DN-06).
+    expect(withoutInfo(result.report).map((r) => [r.code, r.sheet])).toEqual([
+      ['E03', 'Пусто'],
+      ['W02', 'Хороший'],
+    ]);
   });
 
   it('заголовки не в колонке A → название блока = имя листа (SPEC §3.2:112)', async () => {
@@ -367,13 +399,17 @@ describe('ТК 9 (SPEC §8:405): листы _* не становятся бло�
     });
   });
 
-  it('неизвестное значение «Карта» → snp, без строки отчёта (SPEC §3.2:109, решение DN-3h0)', async () => {
+  it('неизвестное значение «Карта» → snp, без строки отчёта про карту (SPEC §3.2:109, решение DN-3h0)', async () => {
     const result = await read([
       { name: '_Сценарий', rows: [['Карта', 'xyz']] },
       { name: 'Блок 1', rows: [HEAD, ['1', 'x']] },
     ]);
     expect(result.scenario?.map).toBe('snp');
-    expect(withoutInfo(result.report)).toEqual([]);
+    // Про само значение «xyz» строки нет и по DN-06: единственный код здесь — W02
+    // из-за отсутствующей колонки «Ссылка» у шага (SPEC §3.5:185).
+    expect(withoutInfo(result.report)).toEqual([
+      { level: 'warning', code: 'W02', sheet: 'Блок 1', row: 2, message: ru.report.codes.W02() },
+    ]);
   });
 });
 
@@ -381,8 +417,12 @@ describe('SPEC §3.3:137: номер шага числом → W03, cell.w со�
   it('id ["1.10","2"], пустая строка пропущена, W03 на строке 4', async () => {
     const result = await read([{ name: 'S', rows: [HEAD, ['1.10', 'A'], [], [2, 'B']] }]);
     expect(result.scenario?.blocks[0]?.steps.map((s) => s.id)).toEqual(['1.10', '2']);
+    // HEAD без «Ссылки» → оба шага дают W02 (DN-06); на строке 4 W03 (структурный,
+    // read.ts) сортируется перед W02 (тем же уровнем и строкой) — порядок обнаружения.
     expect(withoutInfo(result.report)).toEqual([
+      { level: 'warning', code: 'W02', sheet: 'S', row: 2, message: ru.report.codes.W02() },
       { level: 'warning', code: 'W03', sheet: 'S', row: 4, message: ru.report.codes.W03() },
+      { level: 'warning', code: 'W02', sheet: 'S', row: 4, message: ru.report.codes.W02() },
     ]);
     expect(result.scenario).toBeDefined();
   });
@@ -393,8 +433,10 @@ describe('SPEC §3.3:137: номер шага числом → W03, cell.w со�
     const value = 0.1 + 0.2;
     const result = await read([{ name: 'S', rows: [HEAD, [value, 'A']] }]);
     expect(result.scenario?.blocks[0]?.steps.map((s) => s.id)).toEqual(['0.3']);
+    // W03 (структурный) пушится раньше W02 (validateSteps) — порядок обнаружения (DN-06).
     expect(withoutInfo(result.report)).toEqual([
       { level: 'warning', code: 'W03', sheet: 'S', row: 2, message: ru.report.codes.W03() },
+      { level: 'warning', code: 'W02', sheet: 'S', row: 2, message: ru.report.codes.W02() },
     ]);
   });
 });
@@ -416,7 +458,11 @@ describe('SPEC §3.3:139: строка пропускается, только е
       },
     ]);
     expect(result.scenario?.blocks[0]?.steps.map((s) => s.id)).toEqual(['1.1', '1.2']);
-    expect(withoutInfo(result.report)).toEqual([]);
+    // Заголовки без «Ссылки» → оба сохранившихся шага (строки 3 и 5) дают W02 (DN-06).
+    expect(withoutInfo(result.report)).toEqual([
+      { level: 'warning', code: 'W02', sheet: 'Блок', row: 3, message: ru.report.codes.W02() },
+      { level: 'warning', code: 'W02', sheet: 'Блок', row: 5, message: ru.report.codes.W02() },
+    ]);
   });
 });
 
@@ -444,9 +490,19 @@ describe('SPEC §3.5 W05/п.5 плана: пропущенный лист (W05) 
 describe('SPEC §3.5 E02: нет ни одного листа-блока со шагами', () => {
   it('только _Сценарий → E02, summary — нули, ключа scenario нет', async () => {
     const result = await read([{ name: '_Сценарий', rows: [['Название', 'X']] }]);
+    // Книга прочитана (не E01) → I03 всё равно выдаётся, одной строкой в конце
+    // (см. readWorkbook в src/excel/read.ts: I03 выдаётся, когда книга прочитана, —
+    // «остальное не выполняется» по SPEC §3.3:136 только после E01).
     expect(result).toEqual({
       report: [
         { level: 'danger', code: 'E02', sheet: '', row: null, message: ru.report.codes.E02() },
+        {
+          level: 'info',
+          code: 'I03',
+          sheet: '',
+          row: null,
+          message: ru.report.codes.I03('SNP', '17.09.2026'),
+        },
       ],
       summary: ZERO_SUMMARY,
     });
@@ -455,16 +511,17 @@ describe('SPEC §3.5 E02: нет ни одного листа-блока со ш
 
   it('единственный лист-блок — заголовок без строк данных → W05 по листу И E02 по книге (SPEC §3.5:178, план п.8: E02 считает собранные блоки, не число листов-блоков)', async () => {
     const result = await read([{ name: 'Блок', rows: [HEAD] }]);
+    // E02 (danger) теперь сортируется раньше W05 (warning) — SPEC §3.5:195, DN-06.
     expect(withoutInfo(result.report)).toEqual([
-      { level: 'warning', code: 'W05', sheet: 'Блок', row: null, message: ru.report.codes.W05() },
       { level: 'danger', code: 'E02', sheet: '', row: null, message: ru.report.codes.E02() },
+      { level: 'warning', code: 'W05', sheet: 'Блок', row: null, message: ru.report.codes.W05() },
     ]);
     expect(result.summary).toEqual({ sheets: 1, blocks: 0, steps: 0, withLink: 0, withNode: 0 });
     expect(result.scenario).toBeUndefined();
   });
 });
 
-describe('SPEC §3.3:136, план 0.(a)/0.(c): E01 — файл не читается как книга Excel', () => {
+describe('SPEC §3.3:136, план 0.(a)/0.(c): E01 — файл не читается как книга Excel, без I03', () => {
   const csv = new TextEncoder().encode('№ шага,Шаг\n1.1,x\n').buffer;
   const html = new TextEncoder().encode(
     '<table><tr><td>№ шага</td><td>Шаг</td></tr><tr><td>1.1</td><td>x</td></tr></table>',
@@ -478,7 +535,7 @@ describe('SPEC §3.3:136, план 0.(a)/0.(c): E01 — файл не читае
     ['пустой ArrayBuffer', empty],
     ['сигнатура PK + мусор — не ZIP', brokenZip],
   ] as const)('%s → E01, сценарий не собирается', async (_label, buf) => {
-    const result = await readWorkbook(buf, 'x.xlsx');
+    const result = await readWorkbook(buf, 'x.xlsx', SNAPSHOTS);
     expect(result).toEqual({
       report: [
         { level: 'danger', code: 'E01', sheet: '', row: null, message: ru.report.codes.E01() },
@@ -520,7 +577,8 @@ describe('SPEC §3.3:143, план п.11: summary.withLink по isScreenUrl, wit
         ],
       },
     ]);
-    // scenario не проверяется: ftp://x — E07 из DN-06, здесь его ещё нет.
+    // scenario не проверяется: ftp://x на строке 4 теперь даёт E07 (danger, DN-06) и
+    // блокирует сценарий, но summary считается независимо от danger (read.ts:318-326).
     expect(result.summary).toEqual({ sheets: 1, blocks: 1, steps: 4, withLink: 2, withNode: 2 });
   });
 });
@@ -548,8 +606,8 @@ describe('SPEC §3.1:100, §3.6:203: id — слаг baseName(fileName), фол�
   });
 });
 
-describe('SPEC §3.1: пустой «Шаг» — сценарий не возвращается через ScenarioSchema.safeParse (E04 — DN-06)', () => {
-  it('пустой title → scenario отсутствует; строку отчёта не проверяем (E04 ещё нет)', async () => {
+describe('SPEC §3.5:180: пустой «Шаг» в непустой строке → E04, scenario не возвращается', () => {
+  it('пустой title → E04 и W02 (нет колонки «Ссылка»), scenario отсутствует', async () => {
     const result = await read([
       {
         name: 'Блок 1',
@@ -559,11 +617,15 @@ describe('SPEC §3.1: пустой «Шаг» — сценарий не возв
         ],
       },
     ]);
+    expect(withoutInfo(result.report)).toEqual([
+      { level: 'danger', code: 'E04', sheet: 'Блок 1', row: 2, message: ru.report.codes.E04() },
+      { level: 'warning', code: 'W02', sheet: 'Блок 1', row: 2, message: ru.report.codes.W02() },
+    ]);
     expect(result.scenario).toBeUndefined();
   });
 });
 
-describe('LEVELS (SPEC §3.5): уровни кодов совпадают с таблицей SPEC.md (validate.test.ts — вне скоупа DN-05)', () => {
+describe('LEVELS (SPEC §3.5): уровни кодов совпадают с таблицей SPEC.md', () => {
   it('LEVELS содержит те же 15 кодов с теми же уровнями', () => {
     const specPath = fileURLToPath(new URL('../SPEC.md', import.meta.url));
     const lines = readFileSync(specPath, 'utf8').split(/\r?\n/);
@@ -587,7 +649,7 @@ describe('план DN-05, раздел 2, шаг 4: loadXlsx вызываетс�
     });
     try {
       const fresh = await import('../src/excel/read');
-      await expect(fresh.readWorkbook(buf, 'demo.xlsx')).rejects.toThrow();
+      await expect(fresh.readWorkbook(buf, 'demo.xlsx', SNAPSHOTS)).rejects.toThrow();
     } finally {
       vi.doUnmock('xlsx');
     }

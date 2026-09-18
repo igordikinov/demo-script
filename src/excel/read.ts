@@ -4,10 +4,14 @@
 // (§3.7:215, --experimental-strip-types).
 //
 // Сигнатура отличается от §3.3:134 (решение владельца, правка SPEC — DN-oj5): функция
-// асинхронная, как writeWorkbook, потому что SheetJS грузится через loadXlsx(); параметра
-// snapshots пока нет — его вместе с проверками E04–E07, W01, W02, W04, I03 и сортировкой
-// отчёта добавит DN-06. Здесь выдаются только структурные коды: E01, E02, E03, W03, W05,
-// I01, I02. Отчёт идёт в порядке обнаружения.
+// асинхронная, как writeWorkbook, потому что SheetJS грузится через loadXlsx(), а тип
+// snapshots, которого SPEC не называет, — PmSnapshots: снимки всех карт. Загружает их
+// вызывающий (окно загрузки — DN-14, сборка — DN-22), а не разбор: так функция остаётся
+// чистой и одинаково работает в браузере и в Node.
+//
+// Здесь выдаются структурные коды — те, что видны только при чтении листа: E01, E02, E03,
+// W03, W05, I01, I02. Проверки по собранным шагам (E04–E07, W01, W02, W04, I03) — в
+// validate.ts; обе части отчёта сортируются вместе по §3.5:195 (sortReport).
 //
 // E01 шире §3.3:136: SheetJS на не-ZIP входе (CSV, HTML, случайные байты, пустой буфер)
 // не бросает, а молча отдаёт книгу из одного листа — HTML-таблица с «№ шага»/«Шаг»
@@ -20,7 +24,14 @@ import { ScenarioSchema, type Block, type Scenario, type Step } from '../model/s
 import { slugify } from '../model/slug.ts';
 import { isScreenUrl } from '../model/url.ts';
 import { COLUMNS, matchHeader, normalizeHeader } from './columns.ts';
-import { reportRow, type ReportRow } from './validate.ts';
+import type { PmSnapshots } from '../pm/snapshot.ts';
+import {
+  reportRow,
+  sortReport,
+  validateSteps,
+  type LocatedStep,
+  type ReportRow,
+} from './validate.ts';
 import { loadXlsx, type XlsxModule } from './xlsx.ts';
 
 /** Сводка разбора (§3.3:143). Считается и тогда, когда сценарий не собран. */
@@ -171,8 +182,9 @@ function emptyStep(): Step {
 }
 
 /**
- * Лист-блок (§3.2:110–130, §3.3:137–140). Строки отчёта пишет в `report`. Возвращает
- * блок или `undefined`, если лист пропущен (E03, W05) — номер `n` он всё равно занял.
+ * Лист-блок (§3.2:110–130, §3.3:137–140). Строки отчёта пишет в `report`, шаги с номером
+ * строки Excel — в `located` для проверок validateSteps (§3.3:140). Возвращает блок или
+ * `undefined`, если лист пропущен (E03, W05) — номер `n` он всё равно занял.
  */
 function readBlock(
   X: XlsxModule,
@@ -180,6 +192,7 @@ function readBlock(
   sheet: string,
   n: number,
   report: ReportRow[],
+  located: LocatedStep[],
 ): Block | undefined {
   const ref = ws?.['!ref'];
   if (!ws || !ref) {
@@ -236,6 +249,7 @@ function readBlock(
     if (Object.values(step).every((value) => value === '')) continue;
     if (numericId) report.push(reportRow('W03', sheet, r + 1, ru.report.codes.W03()));
     steps.push(step);
+    located.push({ sheet, row: r + 1, step });
   }
   if (steps.length === 0) {
     report.push(reportRow('W05', sheet, null, ru.report.codes.W05()));
@@ -261,11 +275,18 @@ function readBlock(
 
 /**
  * Разбирает книгу xlsx (§3.3). Промис отклоняется только при отказе загрузки SheetJS;
- * всё, что не так с файлом, — строки отчёта. Сценарий возвращается, если нет `danger`
- * и он проходит ScenarioSchema (до DN-06 пустой «Шаг» строки E04 не даёт, но сценария
- * тоже не будет).
+ * всё, что не так с файлом, — строки отчёта, отсортированные по §3.5:195. Сценарий
+ * возвращается, если нет `danger` (§3.3:141) и он проходит ScenarioSchema.
+ *
+ * `snapshots` — снимки карт (§3.4) для W04 и I03; берётся снимок карты из `_Сценарий`.
+ * После E01 не выполняется ничего (§3.3:136), I03 тоже нет. I03 выдаётся, когда книга
+ * прочитана (план DN-06), — значит, и при E02/E03.
  */
-export async function readWorkbook(buf: ArrayBuffer, fileName: string): Promise<ReadResult> {
+export async function readWorkbook(
+  buf: ArrayBuffer,
+  fileName: string,
+  snapshots: PmSnapshots,
+): Promise<ReadResult> {
   const X = await loadXlsx();
   const unreadable = (): ReadResult => ({
     report: [reportRow('E01', '', null, ru.report.codes.E01())],
@@ -279,15 +300,20 @@ export async function readWorkbook(buf: ArrayBuffer, fileName: string): Promise<
     return unreadable();
   }
 
-  const report: ReportRow[] = [];
+  // Структурные строки — в порядке разбора, за ними строки validateSteps; sortReport
+  // устойчива, поэтому при равных уровне, листе и строке этот порядок сохраняется.
+  const raw: ReportRow[] = [];
+  const located: LocatedStep[] = [];
   const meta = readMeta(X, wb, fileName);
   const blockSheets = wb.SheetNames.filter((name) => !name.startsWith('_'));
   const blocks: Block[] = [];
   blockSheets.forEach((sheet, index) => {
-    const block = readBlock(X, wb.Sheets[sheet], sheet, index + 1, report);
+    const block = readBlock(X, wb.Sheets[sheet], sheet, index + 1, raw, located);
     if (block) blocks.push(block);
   });
-  if (blocks.length === 0) report.push(reportRow('E02', '', null, ru.report.codes.E02()));
+  if (blocks.length === 0) raw.push(reportRow('E02', '', null, ru.report.codes.E02()));
+  raw.push(...validateSteps(located, meta.map, snapshots));
+  const report = sortReport(raw, blockSheets);
 
   const steps = blocks.flatMap((block) => block.steps);
   const summary: Summary = {
@@ -299,6 +325,8 @@ export async function readWorkbook(buf: ArrayBuffer, fileName: string): Promise<
   };
   if (report.some((row) => row.level === 'danger')) return { report, summary };
 
+  // Страховка: пустые «Шаг» и «№ шага» уже дали E04/E05 выше. Если схема всё же откажет
+  // (пустое название при пустом fileName — в браузере так не бывает), сценария нет.
   const parsed = ScenarioSchema.safeParse({
     schema: 1,
     id: slugify(baseName(fileName), 'scenario'),

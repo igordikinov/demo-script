@@ -35,6 +35,8 @@ export const PmSnapshotSchema = z
   })
   .strict();
 export type PmSnapshot = z.infer<typeof PmSnapshotSchema>;
+/** Снимки всех карт — третий параметр readWorkbook (проверки W04, I03, SPEC §3.5:187, :191). */
+export type PmSnapshots = Readonly<Record<PmMap, PmSnapshot>>;
 
 // Только нужные поля process.json из process-map. Без .strict(): остальные
 // поля карты (позиции, связи, группы, …) снимку не нужны и отбрасываются.

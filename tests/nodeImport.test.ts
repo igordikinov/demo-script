@@ -44,27 +44,29 @@ describe('node --experimental-strip-types может импортировать 
   });
 });
 
-// Тот же сторож для src/excel/read.ts (план DN-05): npm run scenarios (DN-08,
-// SPEC §3.7:215) читает книги той же readWorkbook через node
-// --experimental-strip-types, без сборки. Кириллица — только \u-escape, вывод
-// script'а — ASCII (обход кодировки консоли Windows, план DN-03).
+// Тот же сторож для src/excel/read.ts (план DN-05, снимки — план DN-06): npm run
+// scenarios (DN-08, SPEC §3.7:215) читает книги той же readWorkbook через node
+// --experimental-strip-types, без сборки, и передаёт снимки карт из src/data/pm/
+// через fs — так же, как это сделает DN-22 (сборка). Кириллица — только
+// \u-escape, вывод script'а — ASCII (обход кодировки консоли Windows, план DN-03).
 describe('node --experimental-strip-types может импортировать src/excel/read.ts', () => {
   it(
-    'readWorkbook разбирает книгу, id — слаг имени файла, шаг сохраняет id-строку "1.10"',
+    'readWorkbook разбирает книгу, id — слаг имени файла, шаг сохраняет id-строку "1.10", ровно одна строка I03',
     { timeout: 30_000 },
     () => {
       const script =
         "const w=await import('./src/excel/write.ts');" +
         "const r=await import('./src/excel/read.ts');" +
+        "const fs=await import('node:fs');const snap=(m)=>JSON.parse(fs.readFileSync('src/data/pm/'+m+'.json','utf8'));" +
         "const b=await w.writeWorkbook([{name:'S',rows:[['\\u2116','\\u0428\\u0430\\u0433'],['1.10','x']]}]);" +
-        "const res=await r.readWorkbook(b.slice().buffer,'demo.xlsx');" +
-        "console.log(res.scenario.id+' '+res.scenario.blocks[0].steps[0].id+' '+res.summary.steps)";
+        "const res=await r.readWorkbook(b.slice().buffer,'demo.xlsx',{snp:snap('snp'),mrp:snap('mrp')});" +
+        "console.log(res.scenario.id+' '+res.scenario.blocks[0].steps[0].id+' '+res.summary.steps+' '+res.report.filter(x=>x.code==='I03').length)";
       const out = execFileSync(
         process.execPath,
         ['--experimental-strip-types', '--no-warnings', '--input-type=module', '-e', script],
         { cwd: root, encoding: 'utf8' },
       );
-      expect(out.trim()).toBe('demo 1.10 1');
+      expect(out.trim()).toBe('demo 1.10 1 1');
     },
   );
 });
