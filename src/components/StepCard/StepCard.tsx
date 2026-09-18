@@ -1,17 +1,50 @@
 // Карточка шага A3 (SPEC §4.4:271–283) и открытие экрана (§4.9:354).
-// Разметка — design/Демо-навигатор v2.dc.html:84–165. Кнопки ‹ › в шапке —
-// DN-13 (§4.5), секция «Карта процесса» и встроенная карта — DN-15 (§4.6).
+// Разметка — design/Демо-навигатор v2.dc.html:84–165. ‹ › и прокрутка к
+// карточке — §4.5:289, :291; клавиши ← → — hooks/useArrowKeys.ts (§4.5:290).
+// Секция «Карта процесса» и встроенная карта — DN-15 (§4.6).
+import { useEffect, useRef } from 'react';
 import { useAppStore } from '../../state/context.ts';
 import { activeStep, stepPosition } from '../../state/reducer.ts';
 import { ru } from '../../i18n/ru.ts';
 import { isScreenUrl } from '../../model/url.ts';
 import { Button } from '../ui/Button.tsx';
-import { ExternalLinkIcon } from '../ui/icons.tsx';
+import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon } from '../ui/icons.tsx';
 import { SectionCaption } from '../ui/SectionCaption.tsx';
 import styles from './StepCard.module.css';
 
 export function StepCard() {
   const { state, dispatch } = useAppStore();
+  const { scenario, stepId } = state;
+  const cardRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  // Последние показанные сценарий и шаг: первый рендер уже «показан».
+  const shown = useRef({ scenario, stepId });
+
+  // §4.5:291: при смене шага страница прокручивается к началу карточки, только
+  // если шапка ушла из видимой области. Хуки — до ранних return (rules-of-hooks).
+  // - Первый рендер пропускается: ref уже хранит текущие значения. Это и открытие
+  //   из каталога (карточка монтируется заново), и двойной запуск в StrictMode.
+  // - Смена сценария пропускается: сравнивается объект, а не id, так что и замена
+  //   «моего» с тем же id. Прокрутку при смене сценария сбрасывает App (DN-26).
+  // - Обычный, а не layout-эффект: passive-эффекты идут в порядке дерева, а
+  //   ScenarioScheme стоит в App раньше main. Поэтому шапка меряется уже после
+  //   scrollIntoView активного шага схемы (§4.3:267), который может сдвинуть окно.
+  useEffect(() => {
+    const previous = shown.current;
+    shown.current = { scenario, stepId };
+    if (previous.scenario !== scenario || previous.stepId === stepId) {
+      return;
+    }
+    const header = headerRef.current;
+    if (header === null) {
+      return;
+    }
+    const { top, bottom } = header.getBoundingClientRect();
+    if (top < 0 || bottom > window.innerHeight) {
+      cardRef.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [scenario, stepId]);
+
   const step = activeStep(state);
   if (step === null || state.scenario === null) {
     return null;
@@ -46,15 +79,35 @@ export function StepCard() {
   const resultEmpty = step.result === '';
 
   return (
-    <article className={styles.card}>
-      <header className={styles.header}>
+    <article ref={cardRef} className={styles.card}>
+      <header ref={headerRef} className={styles.header}>
         <div className={styles.headerText}>
           <div className={styles.meta}>
             {ru.card.position(position.blockN, position.k, position.m)}
           </div>
           <h1 className={styles.title}>{step.title}</h1>
         </div>
-        {/* ‹ › — DN-13 */}
+        {/* ‹ › (v2:91–97): подписи §4.4:275 (решение DN-lur), края — §4.5:289. */}
+        <div className={styles.nav}>
+          <Button
+            variant="neutral"
+            iconOnly
+            icon={<ChevronLeftIcon />}
+            title={ru.card.prevStep}
+            aria-label={ru.card.prevStep}
+            disabled={position.index === 0}
+            onClick={() => dispatch({ type: 'prevStep' })}
+          />
+          <Button
+            variant="neutral"
+            iconOnly
+            icon={<ChevronRightIcon />}
+            title={ru.card.nextStep}
+            aria-label={ru.card.nextStep}
+            disabled={position.index === position.total - 1}
+            onClick={() => dispatch({ type: 'nextStep' })}
+          />
+        </div>
       </header>
 
       <section className={styles.section}>

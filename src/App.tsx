@@ -4,9 +4,11 @@
 // сценарий (DN-26) — раскладка v2:43–90: полоса схемы на всю ширину под шапкой
 // (§4.3:263), под ней main с карточкой шага (§4.4:273). Полоса — соседка main,
 // а не его часть, как в макете; у main в обоих вариантах меняется только класс.
+// Клавиши ← → — §4.5:290 (DN-13): слушатель один на приложение, в AppShell.
 // AppShell выделен, чтобы хост тоста можно было проверить с initialState.
 import { useLayoutEffect, useRef } from 'react';
 import { useAppStore } from './state/context.ts';
+import { useArrowKeys } from './hooks/useArrowKeys.ts';
 import { StoreProvider } from './state/store.tsx';
 import { Header } from './components/Header/Header.tsx';
 import { ImportModal } from './components/ImportModal/ImportModal.tsx';
@@ -19,6 +21,7 @@ import styles from './App.module.css';
 
 export function AppShell() {
   const { state, dispatch } = useAppStore();
+  useArrowKeys();
   const { toast, modal, scenario } = state;
   const scenarioId = scenario?.id ?? null;
   const shownScenarioId = useRef(scenarioId);

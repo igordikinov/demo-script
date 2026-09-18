@@ -1,5 +1,5 @@
 /*
- * Карточка шага A3 — SPEC §4.4:269–281, разметка design/Демо-навигатор v2.dc.html:84–165,
+ * Карточка шага A3 — SPEC §4.4:271–283, разметка design/Демо-навигатор v2.dc.html:84–165,
  * стили блоков «Бизнес ценность» и «Ожидаемый результат» — v2:507–519.
  * Только var(--…) из tokens.css (tests/cssColors.test.ts).
  */
@@ -12,7 +12,7 @@
   background: var(--scp-background-primary);
 }
 
-/* Шапка (v2:86–90); место справа — под ‹ › (DN-13). */
+/* Шапка (v2:86–90); справа — ‹ › (.nav). */
 .header {
   display: flex;
   align-items: flex-start;
@@ -24,6 +24,13 @@
 .headerText {
   flex: 1;
   min-width: 0;
+}
+
+/* ‹ › (v2:91, SPEC §4.4:275, §4.5:289): зазор 8 px, блок не сжимается. */
+.nav {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--scp-spacing-sm);
 }
 
 .meta {

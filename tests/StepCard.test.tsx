@@ -151,6 +151,25 @@ describe('StepCard: шапка (SPEC §4.4:275 — «Блок {n} · шаг {k} 
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: step.title })).toBeInTheDocument();
   });
+
+  // ‹ › — SPEC §4.4:275, §4.5:289 (DN-13). В jsdom getBoundingClientRect
+  // возвращает нули, шапка считается видимой, поэтому scrollIntoView карточки
+  // здесь не срабатывает (см. tests/navigation.test.tsx на прокрутку).
+  it('1.10: в шапке после h1 — кнопки ‹ и › (variant="neutral", iconOnly, size="md"), обе enabled', () => {
+    const { container } = renderCard(scenario, '1.10');
+    const header = container.querySelector('header');
+    if (header === null) {
+      throw new Error('в карточке нет header');
+    }
+    const prevButton = within(header).getByRole('button', { name: ru.card.prevStep });
+    const nextButton = within(header).getByRole('button', { name: ru.card.nextStep });
+    for (const button of [prevButton, nextButton]) {
+      expect(button).toHaveAttribute('data-variant', 'neutral');
+      expect(button).toHaveAttribute('data-icon-only', 'true');
+      expect(button).toHaveAttribute('data-size', 'md');
+      expect(button).toBeEnabled();
+    }
+  });
 });
 
 describe("ТК 16 (SPEC §8:412): «Открыть экран» → window.open(url, '_blank'), opener = null; null → тост", () => {
