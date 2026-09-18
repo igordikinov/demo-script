@@ -1,0 +1,172 @@
+/*
+ * Окно загрузки A4 — SPEC §4.8:329–350, разметка design/Демо-навигатор v2.dc.html:197–287.
+ * Рамку окна, шапку, отступы тела и подвала задаёт Modal. Здесь — только
+ * содержимое. Только var(--…) из tokens.css (tests/cssColors.test.ts).
+ */
+
+/* Зона выбора (v2:212–215). Пунктир и фон — всегда --brand-700 / --brand-50
+   (SPEC §4.8:331), а не серые v2:212 с фиолетовым только при наведении. */
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--scp-spacing-sm);
+  width: 100%;
+  margin-top: var(--scp-spacing-md);
+  padding: var(--scp-spacing-2xl);
+  border: 1px dashed var(--brand-700);
+  border-radius: var(--scp-border-radius-md);
+  background: var(--brand-50);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.zone:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 2px;
+}
+
+.zoneIcon {
+  width: var(--dn-import-drop-icon-size);
+  height: var(--dn-import-drop-icon-size);
+  color: var(--scp-color-neutral-500);
+}
+
+.zoneHint {
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-500);
+}
+
+/* Пустая подсказка во время разбора занимает одну строку того же шрифта:
+   высота зоны не меняется между «до выбора», «Проверяю файл…» и «после» (§4.8:337). */
+.zoneHint:empty::before {
+  content: '\00a0';
+}
+
+/* Строка со ссылкой «Скачать шаблон» (v2:217–219). */
+.links {
+  display: flex;
+  gap: var(--scp-spacing-lg);
+  margin-top: var(--scp-spacing-sm);
+  font: var(--scp-xs-regular), sans-serif;
+}
+
+/* Кнопка в виде ссылки: действие, а не переход (v2:21–22 — цвет a и a:hover). */
+.link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--scp-color-brand-700);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link:hover {
+  color: var(--scp-color-brand-800);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 2px;
+}
+
+/* Серый блок «Схема шаблона» (v2:221–227). */
+.rules {
+  margin-top: var(--scp-spacing-lg);
+  padding: var(--scp-spacing-lg);
+  border-radius: var(--scp-border-radius-sm);
+  background: var(--scp-color-neutral-50);
+  font-size: var(--scp-font-sizes-12);
+  line-height: var(--scp-line-height-18);
+  color: var(--scp-content-sub-primary);
+}
+
+.rulesTitle {
+  font-weight: var(--scp-font-weight-semi-bold);
+  color: var(--scp-content-primary);
+}
+
+.rulesList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--scp-spacing-xs);
+  margin: var(--scp-spacing-sm) 0 0;
+  padding-left: var(--dn-import-rules-indent);
+}
+
+/* Сводка §3.3 (v2:234). */
+.summary {
+  margin: var(--scp-spacing-md) 0 0;
+  font-size: var(--scp-font-sizes-14);
+}
+
+/* Таблицы «Лист · Шагов» и отчёта (v2:236–274). */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--scp-font-sizes-14);
+  line-height: var(--scp-line-height-16);
+}
+
+.sheetTable {
+  margin-top: var(--scp-spacing-md);
+}
+
+.table th {
+  height: var(--dn-import-th-height);
+  padding: 0 var(--scp-spacing-sm);
+  border: 1px solid var(--scp-table-border);
+  background: var(--scp-common-second-background);
+  font-weight: var(--scp-font-weight-semi-bold);
+  text-align: left;
+}
+
+.table td {
+  height: var(--dn-import-td-height);
+  padding: 0 var(--scp-spacing-sm);
+  border: 1px solid var(--scp-table-border);
+}
+
+/* Колонка «Шагов» — справа, 120 px (v2:240, :247). */
+.table .stepsCol {
+  width: var(--dn-import-steps-col-width);
+  text-align: right;
+}
+
+/* Колонки отчёта 110 / 90 / 70 px, «Сообщение» — остаток (v2:256–259). */
+.table .levelCol {
+  width: var(--dn-import-level-col-width);
+}
+
+.table .sheetCol {
+  width: var(--dn-import-sheet-col-width);
+}
+
+.table .rowCol {
+  width: var(--dn-import-row-col-width);
+}
+
+.table td.messageCol {
+  padding: var(--scp-spacing-sm);
+}
+
+/* Обёртка отчёта (v2:253 margin-top: 16px). */
+.report {
+  margin-top: var(--scp-spacing-lg);
+}
+
+/* Отчёт длиннее 12 строк — своя прокрутка, высота 360 px (SPEC §4.8:339). */
+.report[data-scroll='true'] {
+  max-height: var(--dn-import-report-max-height);
+  overflow-y: auto;
+}
+
+/* Подсказка в подвале при danger (v2:280, SPEC §4.8:348). */
+.footerHint {
+  flex: 1;
+  margin: 0;
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-600);
+}

@@ -574,4 +574,24 @@
   --dn-header-crumb-gap: var(--scp-spacing-xs);
   /* Шеврон ‹ (CAT:187 svg 16×16) */
   --dn-header-icon-size: 16px;
+
+  /* ------------------------------------------------------------------ */
+  /* Окно загрузки (DN-14): design/Демо-навигатор v2.dc.html:197–287     */
+  /* ------------------------------------------------------------------ */
+
+  /* Иконка upload в зоне выбора (v2:213 svg 24×24) */
+  --dn-import-drop-icon-size: 24px;
+  /* Отступ списка «Схемы шаблона» (v2:223 padding-left: 18px) */
+  --dn-import-rules-indent: 18px;
+  /* Высота строки заголовков и строки таблиц (v2:239 — 36px, v2:246 — 32px) */
+  --dn-import-th-height: 36px;
+  --dn-import-td-height: 32px;
+  /* Колонка «Шагов» (v2:240) */
+  --dn-import-steps-col-width: 120px;
+  /* Колонки отчёта «Уровень · Лист · Строка» (v2:256–258) */
+  --dn-import-level-col-width: 110px;
+  --dn-import-sheet-col-width: 90px;
+  --dn-import-row-col-width: 70px;
+  /* Отчёт длиннее 12 строк прокручивается, высота 360 px (SPEC §4.8:339) */
+  --dn-import-report-max-height: 360px;
 }
