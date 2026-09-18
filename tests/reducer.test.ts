@@ -1,11 +1,14 @@
 // @vitest-environment node
-// SPEC §1:15 (useReducer + Context), §2:49 (state/store.tsx — сценарий, шаг,
-// окна, признак карты), §4.3:265, §4.4:273, §4.5:285 (ТК13), §4.6:309–311,
-// §4.7:318. Контракт форм данных и правил редьюсера — план DN-09, раздел 2.
+// SPEC §1:15 (useReducer + Context), §2:49–51 (state/store.tsx — сценарий, шаг,
+// окна, признак карты; state/library.ts «мои»; state/shared.ts общие), §4.3:265,
+// §4.4:273, §4.5:285 (ТК13), §4.6:309–311, §4.7:318. library/shared в AppState —
+// только данные (SPEC §3.6:199, §3.7:209): чтения localStorage и fetch здесь нет,
+// это state/library.ts и state/shared.ts (DN-23).
 // Стор — чистые данные, поэтому гоняем в Node, без DOM.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { ScenarioSchema, type Scenario } from '../src/model/schema';
+import { toIndexItem } from '../src/model/scenarioIndex';
 import {
   appReducer,
   createInitialState,
@@ -73,18 +76,24 @@ describe('flatSteps: факты фикстуры (SPEC §8 ТК1: 3 блока, 
 });
 
 describe('createInitialState', () => {
-  it('каталог: сценарий, шаг, окно и тост пустые, карта закрыта', () => {
+  it('каталог: сценарий, шаг, окно и тост пустые, карта закрыта, «Мои» пусты и доступны, «Общие» грузятся (SPEC §2:49–51)', () => {
     expect(createInitialState()).toEqual({
       scenario: null,
       stepId: null,
       modal: null,
       mapOpen: false,
       toast: null,
+      library: { items: [], available: true },
+      shared: { status: 'loading', items: [] },
     });
   });
 
   it('два вызова дают разные объекты (не общий синглтон)', () => {
     expect(createInitialState()).not.toBe(createInitialState());
+  });
+
+  it('library.items — новый массив на каждый вызов', () => {
+    expect(createInitialState().library.items).not.toBe(createInitialState().library.items);
   });
 });
 
@@ -461,7 +470,7 @@ describe('appReducer: признак карты — один на приложе
   );
 });
 
-describe('appReducer: тост (план DN-09 D1 — новый seq на каждый showToast)', () => {
+describe('appReducer: тост (новый seq на каждый showToast, чтобы Toast перезапускал отсчёт)', () => {
   it('showToast(A) устанавливает message и не трогает остальные поля', () => {
     const opened = appReducer(createInitialState(), {
       type: 'openScenario',
@@ -498,6 +507,87 @@ describe('appReducer: тост (план DN-09 D1 — новый seq на каж
   it('повторный dismissToast (тост уже null) — тот же объект', () => {
     const state = createInitialState();
     expect(appReducer(state, { type: 'dismissToast' })).toBe(state);
+  });
+});
+
+describe('appReducer: library (SPEC §2:49–51 — state/library.ts «мои» в localStorage, DN-23)', () => {
+  it('librarySet заменяет items, available не трогает', () => {
+    const state: AppState = { ...createInitialState(), library: { items: [], available: false } };
+    const next = appReducer(state, { type: 'librarySet', items: [myScenario] });
+    expect(next.library).toEqual({ items: [myScenario], available: false });
+  });
+
+  it('librarySet с той же ссылкой на items — тот же объект', () => {
+    const items = [myScenario];
+    const state: AppState = { ...createInitialState(), library: { items, available: true } };
+    const next = appReducer(state, { type: 'librarySet', items });
+    expect(next).toBe(state);
+  });
+
+  it('libraryUnavailable выставляет available=false, items не трогает', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      library: { items: [myScenario], available: true },
+    };
+    const next = appReducer(state, { type: 'libraryUnavailable' });
+    expect(next.library).toEqual({ items: [myScenario], available: false });
+  });
+
+  it('libraryUnavailable, когда available уже false — тот же объект', () => {
+    const state: AppState = { ...createInitialState(), library: { items: [], available: false } };
+    expect(appReducer(state, { type: 'libraryUnavailable' })).toBe(state);
+  });
+});
+
+describe('appReducer: shared (SPEC §3.7:230 — статус загрузки index.json, DN-23)', () => {
+  const item = toIndexItem(scenario);
+
+  it('sharedLoading из готового статуса переводит в loading, items не трогает', () => {
+    const state: AppState = { ...createInitialState(), shared: { status: 'ready', items: [item] } };
+    const next = appReducer(state, { type: 'sharedLoading' });
+    expect(next.shared).toEqual({ status: 'loading', items: [item] });
+  });
+
+  it('sharedLoading, когда уже loading — тот же объект', () => {
+    const state = createInitialState();
+    expect(appReducer(state, { type: 'sharedLoading' })).toBe(state);
+  });
+
+  it('sharedLoaded ставит status ready и items = action.items', () => {
+    const state = createInitialState();
+    const next = appReducer(state, { type: 'sharedLoaded', items: [item] });
+    expect(next.shared).toEqual({ status: 'ready', items: [item] });
+  });
+
+  it('sharedFailed ставит status error и items []', () => {
+    const state: AppState = { ...createInitialState(), shared: { status: 'loading', items: [] } };
+    const next = appReducer(state, { type: 'sharedFailed' });
+    expect(next.shared).toEqual({ status: 'error', items: [] });
+  });
+
+  it('sharedFailed, когда уже error с [] — тот же объект', () => {
+    const state: AppState = { ...createInitialState(), shared: { status: 'error', items: [] } };
+    expect(appReducer(state, { type: 'sharedFailed' })).toBe(state);
+  });
+});
+
+describe('appReducer: library и shared не трогаются действиями каталога/сценария (SPEC §2:49–51)', () => {
+  const withLibraryAndShared: AppState = {
+    ...createInitialState(),
+    library: { items: [myScenario], available: false },
+    shared: { status: 'ready', items: [toIndexItem(scenario)] },
+  };
+
+  it('openScenario сохраняет library и shared (та же ссылка)', () => {
+    const next = appReducer(withLibraryAndShared, { type: 'openScenario', scenario });
+    expect(next.library).toBe(withLibraryAndShared.library);
+    expect(next.shared).toBe(withLibraryAndShared.shared);
+  });
+
+  it('showToast сохраняет library и shared (та же ссылка)', () => {
+    const next = appReducer(withLibraryAndShared, { type: 'showToast', message: 'A' });
+    expect(next.library).toBe(withLibraryAndShared.library);
+    expect(next.shared).toBe(withLibraryAndShared.shared);
   });
 });
 

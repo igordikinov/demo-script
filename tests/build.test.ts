@@ -16,9 +16,21 @@ let outputs: OutputItem[] = [];
 
 describe('build', () => {
   beforeAll(async () => {
-    const out = await build({ root, logLevel: 'silent', build: { write: false } });
-    const bundles = (Array.isArray(out) ? out : [out]) as Rollup.RollupOutput[];
-    outputs = bundles.flatMap((bundle) => bundle.output);
+    // vitest выставляет process.env.NODE_ENV = 'test' в своём воркере ещё до
+    // этого файла. Vite 6 при программной сборке смотрит на NODE_ENV, а не
+    // на mode (см. dep-*.js: replaceDefine/isProduction) — без переопределения
+    // build() здесь собрал бы dev-версии react/react-dom и jsxDEV от
+    // plugin-react вместо той сборки, что делает `npm run build`. Значения
+    // возвращают afterAll — это должно совпасть с реальным `npm run build`
+    // ради проверки лимита SPEC §8:427 ниже.
+    vi.stubEnv('NODE_ENV', 'production');
+    try {
+      const out = await build({ root, logLevel: 'silent', build: { write: false } });
+      const bundles = (Array.isArray(out) ? out : [out]) as Rollup.RollupOutput[];
+      outputs = bundles.flatMap((bundle) => bundle.output);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   }, 60_000);
 
   it('uses relative base', () => {

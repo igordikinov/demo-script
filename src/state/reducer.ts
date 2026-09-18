@@ -1,6 +1,6 @@
 // Состояние приложения — чистая логика без React и DOM (SPEC §1:15: useReducer +
-// React Context; §2:49: открытый сценарий, шаг, окна, признак карты). Провайдер —
-// src/state/store.tsx, хук — src/state/context.ts. Контракт — план DN-09, раздел 2.
+// React Context; §2:49–51: открытый сценарий, шаг, окна, признак карты, «Мои» и
+// «Общие»). Провайдер — src/state/store.tsx, хук — src/state/context.ts.
 //
 // - Сценарий не открыт → каталог (§4.2:243, §4.7:316).
 // - Шаг при открытии: найденный или первый (§4.7:318).
@@ -10,9 +10,14 @@
 // - Признак «карта раскрыта» — один на приложение, при смене шага не сбрасывается
 //   и между перезагрузками не сохраняется (§4.6:309–311).
 //
-// Адреса страницы (DN-16) и хранилища браузера (DN-23, §3.6:205) здесь нет. Если действие
-// ничего не меняет, редьюсер возвращает тот же объект состояния.
+// - `library` и `shared` — только данные: список «Моих» (§3.6:199–207) и статус загрузки
+//   индекса «Общих» (§3.7:230; три состояния для каталога — §4.2:256). Чтение и запись
+//   localStorage — state/library.ts, fetch — state/shared.ts, вызывает их провайдер.
+//
+// Адреса страницы (DN-16) здесь нет. Если действие ничего не меняет, редьюсер
+// возвращает тот же объект состояния.
 import type { Block, Scenario, Step } from '../model/schema.ts';
+import type { ScenarioIndexItem } from '../model/scenarioIndex.ts';
 
 /** Открытое модальное окно: загрузка A4 (§4.8) или удаление «моего» сценария A5.2 (§4.2:253). */
 export type ModalState = { kind: 'import' } | { kind: 'delete'; scenarioId: string };
@@ -27,6 +32,24 @@ export interface ToastState {
   seq: number;
 }
 
+/** «Мои» (§3.6). */
+export interface LibraryState {
+  /** По loadedAt, новые сверху (§3.6:204). */
+  items: Scenario[];
+  /** `false` — хранилище недоступно, «Мои» живут до перезагрузки (§3.6:206). */
+  available: boolean;
+}
+
+/** Загрузка индекса «Общих» (§3.7:230): идёт, готово, ошибка (§4.2:256). */
+export type SharedStatus = 'loading' | 'ready' | 'error';
+
+/** «Общие» (§3.7). */
+export interface SharedState {
+  status: SharedStatus;
+  /** Элементы index.json в его порядке (§3.7:228); при ошибке — пусто. */
+  items: ScenarioIndexItem[];
+}
+
 export interface AppState {
   /** `null` — каталог. */
   scenario: Scenario | null;
@@ -37,6 +60,8 @@ export interface AppState {
   /** Признак «карта раскрыта» (§4.6:309–311). */
   mapOpen: boolean;
   toast: ToastState | null;
+  library: LibraryState;
+  shared: SharedState;
 }
 
 export type AppAction =
@@ -51,7 +76,13 @@ export type AppAction =
   | { type: 'toggleMap' }
   | { type: 'setMapOpen'; open: boolean }
   | { type: 'showToast'; message: string }
-  | { type: 'dismissToast' };
+  | { type: 'dismissToast' }
+  /** Новый список «Моих» — после записи или в памяти при недоступном хранилище. */
+  | { type: 'librarySet'; items: Scenario[] }
+  | { type: 'libraryUnavailable' }
+  | { type: 'sharedLoading' }
+  | { type: 'sharedLoaded'; items: ScenarioIndexItem[] }
+  | { type: 'sharedFailed' };
 
 /** Позиция шага в сценарии. */
 export interface StepPosition {
@@ -68,9 +99,20 @@ export interface StepPosition {
   total: number;
 }
 
-/** Каталог: сценарий не открыт, окон нет, карта скрыта, тоста нет. */
+/**
+ * Каталог: сценарий не открыт, окон нет, карта скрыта, тоста нет; «Мои» пусты и
+ * доступны, индекс «Общих» грузится. Хранилище не читается — это делает провайдер.
+ */
 export function createInitialState(): AppState {
-  return { scenario: null, stepId: null, modal: null, mapOpen: false, toast: null };
+  return {
+    scenario: null,
+    stepId: null,
+    modal: null,
+    mapOpen: false,
+    toast: null,
+    library: { items: [], available: true },
+    shared: { status: 'loading', items: [] },
+  };
 }
 
 /** Шаги сценария в сквозном порядке, блок за блоком (§4.5:285). */
@@ -206,6 +248,31 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         return state;
       }
       return { ...state, toast: null };
+    case 'librarySet':
+      if (state.library.items === action.items) {
+        return state;
+      }
+      return { ...state, library: { ...state.library, items: action.items } };
+    case 'libraryUnavailable':
+      if (!state.library.available) {
+        return state;
+      }
+      return { ...state, library: { ...state.library, available: false } };
+    case 'sharedLoading':
+      if (state.shared.status === 'loading') {
+        return state;
+      }
+      return { ...state, shared: { ...state.shared, status: 'loading' } };
+    case 'sharedLoaded':
+      if (state.shared.status === 'ready' && state.shared.items === action.items) {
+        return state;
+      }
+      return { ...state, shared: { status: 'ready', items: action.items } };
+    case 'sharedFailed':
+      if (state.shared.status === 'error' && state.shared.items.length === 0) {
+        return state;
+      }
+      return { ...state, shared: { status: 'error', items: [] } };
     default: {
       const unreachable: never = action;
       return unreachable;

@@ -1,13 +1,17 @@
-// SPEC §1:15 (useReducer + Context), §2:49. Контракт — план DN-09, раздел 2:
-// StoreProvider/useAppStore живут в src/state/store.tsx и src/state/context.ts,
-// react-refresh/only-export-components (план DN-09, дефект D2) — их разнесение
-// проверяется прогоном eslint в шаге разработчика, здесь — только поведение.
+// SPEC §1:15 (useReducer + Context), §2:49–51: StoreProvider/useAppStore живут в
+// src/state/store.tsx и src/state/context.ts (react-refresh/only-export-components
+// проверяется прогоном eslint в шаге разработчика, здесь — только поведение).
 // jsdom: рендерим реальные компоненты через @testing-library/react.
+//
+// storage/fetchFn пропы StoreProvider читаются один раз при монтировании: тесты
+// ниже проверяют это отдельно от базового поведения (DN-23).
 import type { ReactNode } from 'react';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { StoreProvider } from '../src/state/store';
 import { useAppStore } from '../src/state/context';
 import { createInitialState, type AppState } from '../src/state/reducer';
+import type { LibraryStorage } from '../src/state/library';
+import type { FetchFn } from '../src/state/shared';
 
 describe('useAppStore: вызван вне StoreProvider', () => {
   it('бросает ошибку с упоминанием StoreProvider', () => {
@@ -92,6 +96,48 @@ describe('StoreProvider: мемоизация value (useMemo по [state, dispat
       result.current.dispatch({ type: 'toggleMap' });
     });
     expect(result.current.dispatch).toBe(firstDispatch);
+  });
+});
+
+describe('StoreProvider: пропы storage/fetchFn читаются один раз при монтировании', () => {
+  it('rerender с новым инлайновым fetchFn не перезапускает загрузку index.json', () => {
+    const fetchFn = vi.fn<FetchFn>(() => new Promise<Response>(() => {}));
+    const { rerender } = renderHook(() => useAppStore(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <StoreProvider storage={null} fetchFn={(url) => fetchFn(url)}>
+          {children}
+        </StoreProvider>
+      ),
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    rerender();
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('initialState передан — storage.getItem не вызывается (SPEC §3.6:202 — «Мои» читаются при старте)', () => {
+    const getItem = vi.fn(() => null);
+    const storage: LibraryStorage = { getItem, setItem: vi.fn(), removeItem: vi.fn() };
+    const initialState = createInitialState();
+    function Wrapper({ children }: { children: ReactNode }) {
+      return (
+        <StoreProvider initialState={initialState} storage={storage}>
+          {children}
+        </StoreProvider>
+      );
+    }
+    renderHook(() => useAppStore(), { wrapper: Wrapper });
+    expect(getItem).not.toHaveBeenCalled();
+  });
+
+  it('commands не меняется при rerender без изменений', () => {
+    const { result, rerender } = renderHook(() => useAppStore(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <StoreProvider storage={null}>{children}</StoreProvider>
+      ),
+    });
+    const firstCommands = result.current.commands;
+    rerender();
+    expect(result.current.commands).toBe(firstCommands);
   });
 });
 
