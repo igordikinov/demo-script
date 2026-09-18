@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run scenarios",
     "dev": "vite",
+    "prebuild": "npm run scenarios",
     "build": "vite build",
     "size": "node --experimental-strip-types scripts/size.ts",
     "preview": "vite preview",
@@ -12,7 +14,8 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "pm:snapshot": "node --experimental-strip-types scripts/pm-snapshot.ts",
-    "fixture": "node --experimental-strip-types scripts/make-fixture.ts"
+    "fixture": "node --experimental-strip-types scripts/make-fixture.ts",
+    "scenarios": "node --experimental-strip-types scripts/build-scenarios.ts"
   },
   "dependencies": {
     "@fontsource/open-sans": "^5.3.0",
