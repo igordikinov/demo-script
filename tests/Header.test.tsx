@@ -1,9 +1,8 @@
-// SPEC §4.1:234–240 (шапка A0). Разметка и контракт — план DN-10, раздел 3.4:
-// один <header>, левая часть — условная ветка (каталог/сценарий) в фиксированной
-// позиции, затем .spacer и кнопка «Загрузить из Excel» всегда последними двумя
-// узлами (дефект D1 плана — иначе Modal теряет фокус-опенер при переходе
-// каталог↔сценарий, §4.8:325, §4.8:346). Tag «общий»/«мой» — не DN-10 (DN-26),
-// поэтому здесь не проверяется.
+// SPEC §4.1:236–241 (шапка A0). Один <header>, левая часть — условная ветка
+// (каталог/сценарий) в фиксированной позиции, затем .spacer и кнопка
+// «Загрузить из Excel» всегда последними двумя узлами: иначе при смене
+// варианта Modal теряет фокус-опенер при переходе каталог↔сценарий
+// (§4.8:325, §4.8:346). Tag «общий»/«мой» (§4.1:241, §2:55, DN-26) — здесь же.
 //
 // Эталон содержания — tests/fixtures/deployment-demo.json (CLAUDE.md: не
 // придумывать содержание сценария). buildScenario — копия приёма из
@@ -96,7 +95,7 @@ describe('Header: вариант каталога (SPEC §4.1:238)', () => {
   });
 });
 
-describe('Header: вариант открытого сценария (SPEC §4.1:239)', () => {
+describe('Header: вариант открытого сценария (SPEC §4.1:241)', () => {
   it('«‹ Сценарии», разделитель, название и Badge модуля есть; монограммы и appTitle нет', () => {
     renderHeader(scenario);
     const banner = within(screen.getByRole('banner'));
@@ -125,14 +124,71 @@ describe('Header: вариант открытого сценария (SPEC §4.1
   });
 });
 
+describe('Header: `Tag` источника — «общий»/«мой» (SPEC §4.1:241, §2:55)', () => {
+  it('source "local", id без префикса my- — есть tagLocal, нет tagRepo (H1: ловит Tag по id)', () => {
+    const local = buildScenario('deployment-demo', 'local');
+    renderHeader(local);
+    const banner = within(screen.getByRole('banner'));
+    expect(banner.getByText(ru.header.tagLocal)).toBeInTheDocument();
+    expect(banner.queryByText(ru.header.tagRepo)).not.toBeInTheDocument();
+  });
+
+  it('source "repo", id с префиксом my- — есть tagRepo, нет tagLocal (H2: ловит Tag по id)', () => {
+    const repo = buildScenario('my-deployment-demo', 'repo');
+    renderHeader(repo);
+    const banner = within(screen.getByRole('banner'));
+    expect(banner.getByText(ru.header.tagRepo)).toBeInTheDocument();
+    expect(banner.queryByText(ru.header.tagLocal)).not.toBeInTheDocument();
+  });
+
+  it('порядок узлов banner: ‹Сценарии · / · название · Badge модуля · Tag · spacer · «Загрузить из Excel» (H3)', () => {
+    const local = buildScenario('my-deployment-demo', 'local');
+    renderHeader(local);
+    const bannerEl = screen.getByRole('banner');
+    const texts = [...bannerEl.children].map((el) => el.textContent);
+    expect(texts).toEqual([
+      ru.header.back,
+      ru.header.separator,
+      fixture.title,
+      fixture.module,
+      ru.header.tagLocal,
+      '',
+      ru.header.upload,
+    ]);
+  });
+
+  it('пустой модуль — Tag есть и без Badge (H4)', () => {
+    const repoNoModule = buildScenario('deployment-demo', 'repo', '');
+    renderHeader(repoNoModule);
+    const bannerEl = screen.getByRole('banner');
+    const texts = [...bannerEl.children].map((el) => el.textContent);
+    expect(texts).toEqual([
+      ru.header.back,
+      ru.header.separator,
+      fixture.title,
+      ru.header.tagRepo,
+      '',
+      ru.header.upload,
+    ]);
+  });
+
+  it('каталог (сценарий не открыт) — ни tagRepo, ни tagLocal (H5)', () => {
+    renderHeader(null);
+    const banner = within(screen.getByRole('banner'));
+    expect(banner.queryByText(ru.header.tagRepo)).not.toBeInTheDocument();
+    expect(banner.queryByText(ru.header.tagLocal)).not.toBeInTheDocument();
+  });
+});
+
 describe('Header: клик «‹ Сценарии» (SPEC §4.7:319 — scenario и step убираются)', () => {
-  it('после клика шапка переходит в вариант каталога, стор сброшен', () => {
+  it('после клика шапка переходит в вариант каталога, стор сброшен, Tag «общий» исчезает (H6)', () => {
     renderHeader(scenario);
     fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
 
     const banner = within(screen.getByRole('banner'));
     expect(banner.getByText(ru.header.monogram)).toBeInTheDocument();
     expect(banner.queryByRole('button', { name: ru.header.back })).not.toBeInTheDocument();
+    expect(banner.queryByText(ru.header.tagRepo)).not.toBeInTheDocument();
 
     const probe = JSON.parse(screen.getByTestId('state-probe').textContent ?? '{}') as {
       scenario: string | null;

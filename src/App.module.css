@@ -1,0 +1,14 @@
+/*
+ * Экран сценария — design/Демо-навигатор v2.dc.html:43–90: полоса схемы на всю
+ * ширину (ScenarioScheme, SPEC §4.3:263), под ней main с карточкой (§4.4:273).
+ * Только var(--…) из tokens.css (tests/cssColors.test.ts).
+ */
+
+/*
+ * v2:83 — отступ 32 px. overflow: auto макета не переносится: при нехватке
+ * высоты прокручивается страница (SPEC §4.10:358). Ширину карточки задаёт
+ * сам StepCard (§4.4:273). Каталог отступ держит сам (Catalog.module.css).
+ */
+.scenario {
+  padding: var(--scp-spacing-3xl);
+}

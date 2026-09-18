@@ -32,6 +32,7 @@ import {
   numberedFreeTitle,
   titleKey,
 } from '../src/components/ImportModal/duplicate';
+import { appBanner } from './helpers';
 import fixtureJson from './fixtures/deployment-demo.json';
 
 const importMetaUrl = import.meta.url;
@@ -172,9 +173,11 @@ function renderApp(opts: RenderOptions = {}): void {
 }
 
 function uploadButton(): HTMLElement {
-  // Скоуп на <header>: пустые «Мои» (A5.1) рисуют свою кнопку с тем же текстом
-  // (SPEC §4.2:255) — см. tests/ImportModal.test.tsx:116-121.
-  return within(screen.getByRole('banner')).getByRole('button', { name: ru.header.upload });
+  // Скоуп на шапку A0 (tests/helpers.ts): пустые «Мои» (A5.1) рисуют свою
+  // кнопку с тем же текстом (SPEC §4.2:255), а с открытым сценарием (DN-26)
+  // второй <header> — заголовок StepCard внутри <article> — см.
+  // tests/ImportModal.test.tsx:115-121.
+  return within(appBanner()).getByRole('button', { name: ru.header.upload });
 }
 
 function openImportDialog(): Promise<HTMLElement> {

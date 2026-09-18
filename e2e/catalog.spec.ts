@@ -171,7 +171,9 @@ test.describe('C1 — каталог с данными (ТК 26, SPEC §8:422)',
     // Клик по ячейке «Шагов» (не по названию) — вся строка кнопка (SPEC §4.2:254).
     await row.locator('td').nth(3).click();
     await expect(page.getByRole('banner')).toContainText('Deployment — демо-сценарий');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(0);
+    // Каталог скрыт: его h1 «Сценарии» больше не в документе. Не любой h1 —
+    // открытая карточка шага рисует свой h1 с названием шага (SPEC §4.4:273, DN-26).
+    await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toHaveCount(0);
 
     expect(errors).toEqual([]);
   });

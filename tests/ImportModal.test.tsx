@@ -43,6 +43,7 @@ import { COLUMNS } from '../src/excel/columns';
 import { readWorkbook } from '../src/excel/read';
 import { loadXlsx } from '../src/excel/xlsx';
 import { XLSX_MIME_TYPE } from '../src/components/ui/download';
+import { appBanner } from './helpers';
 import fixtureJson from './fixtures/deployment-demo.json';
 
 const importMetaUrl = import.meta.url;
@@ -112,10 +113,12 @@ function probeState(): ProbeSnapshot {
 }
 
 function uploadButton(): HTMLElement {
-  // Скоуп на <header> (role="banner"): пустые «Мои» (A5.1, SPEC §4.2:257,
-  // DN-24) рисуют свою primary-кнопку с тем же текстом ru.catalog.upload ===
-  // ru.header.upload, без скоупа getByRole находит два элемента.
-  return within(screen.getByRole('banner')).getByRole('button', { name: ru.header.upload });
+  // Скоуп на шапку A0 (tests/helpers.ts, не screen.getByRole('banner')
+  // напрямую): пустые «Мои» (A5.1, SPEC §4.2:257, DN-24) рисуют свою
+  // primary-кнопку с тем же текстом ru.catalog.upload === ru.header.upload, а
+  // с открытым сценарием (DN-26) второй <header> — заголовок StepCard внутри
+  // <article> — без appBanner() getByRole('banner') находит оба.
+  return within(appBanner()).getByRole('button', { name: ru.header.upload });
 }
 
 /** Клик по кнопке шапки, дожидается появления диалога (SPEC §4.8:329).
@@ -416,7 +419,9 @@ describe('Нажатие primary после чистого файла (SPEC §4.
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('status')).toHaveTextContent(ru.importModal.added(29));
-    expect(within(screen.getByRole('banner')).getByText(fixture.title)).toBeInTheDocument();
+    // Сценарий уже открыт (второй <header> — StepCard внутри <article>,
+    // DN-26): шапка A0 — только через appBanner() (tests/helpers.ts).
+    expect(within(appBanner()).getByText(fixture.title)).toBeInTheDocument();
 
     const probe = probeState();
     // id «моего» — 'my-' + слаг названия фикстуры (SPEC §3.6:203), см. tests/import.test.tsx.

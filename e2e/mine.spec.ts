@@ -1,9 +1,8 @@
 // «Мои» в браузере: запись при загрузке (SPEC §4.8:350, §3.6:203-205) и окно
 // удаления A5.2 (SPEC §4.2:255). ТК 18 (SPEC §8:414) указывает
-// e2e/import.spec.ts, но по решению оркестратора первая часть ТК 18 (до
-// «сценарий открыт (название в шапке)») проверяется здесь — bd DN-25. Карточка
-// 1.1, Tag «мой» в шапке и «‹ Сценарии» → строка в «Моих» довешиваются после
-// слияния DN-26 (Tag и «‹ Сценарии» — src/components/Header/**, зона DN-26).
+// e2e/import.spec.ts, но по решению оркестратора проверяется здесь целиком —
+// bd DN-25 (запись при загрузке, тост) и bd DN-26 (карточка 1.1, Tag «мой» в
+// шапке, «‹ Сценарии» → строка в «Моих»; после слияния DN-26 в эту ветку).
 //
 // Юнит-уровень того же поведения — tests/import.test.tsx (ТК 27/28) и
 // tests/DeleteDialog.test.tsx; здесь — то, что видно только в браузере:
@@ -29,6 +28,17 @@ const fixture = JSON.parse(readFileSync(FIXTURE_JSON_PATH, 'utf8')) as {
 
 /** SPEC §3.6:203: 'my-' + слаг названия фикстуры (см. tests/library.test.ts:26-28). */
 const FIX_ID = 'my-deployment-demo-scenariy';
+
+/** Шаг 1.1 фикстуры (карточка после открытия «на первом шаге», ТК 18) — копия приёма e2e/scenario.spec.ts:113-121. */
+const block1 = fixture.blocks[0];
+if (block1 === undefined) {
+  throw new Error('фикстура: нет блока 1');
+}
+const block1Steps = block1.steps as { id: string; title: string }[];
+const s11 = block1Steps[0];
+if (s11 === undefined) {
+  throw new Error('фикстура: нет шага 1.1 в блоке 1');
+}
 
 interface StoredLibrary {
   items: { id: string }[];
@@ -66,8 +76,8 @@ async function seedOneMine(page: Page, id: string): Promise<void> {
   );
 }
 
-test.describe('M1 — ТК 18 (SPEC §8:414), часть 1: загрузка записывается в «Мои»', () => {
-  test('пустые «Мои» → «Загрузить из Excel» → файл фикстуры → «Добавить в мои» → тост, сценарий открыт', async ({
+test.describe('M1 — ТК 18 (SPEC §8:414), дословно', () => {
+  test('пустые «Мои» → «Загрузить из Excel» → файл фикстуры → «Добавить в мои» → тост → карточка 1.1, Tag «мой»; «‹ Сценарии» → строка в «Моих»', async ({
     page,
   }) => {
     await page.goto('/');
@@ -89,9 +99,24 @@ test.describe('M1 — ТК 18 (SPEC §8:414), часть 1: загрузка з�
 
     await expect(dialog).toBeHidden();
     await expect(page.getByRole('status')).toHaveText(ru.importModal.added(29));
-    await expect(page.getByRole('banner')).toContainText(fixture.title);
+    const banner = page.getByRole('banner');
+    await expect(banner).toContainText(fixture.title);
 
     expect(await storedLibraryIds(page)).toEqual([FIX_ID]);
+
+    // Карточка 1.1 (SPEC §4.4:271, §4.9:354 — открытие на первом шаге) и Tag
+    // «мой» в шапке по scenario.source === 'local' (SPEC §4.1:241, §3.6:203).
+    await expect(page.getByRole('heading', { level: 1, name: s11.title })).toBeVisible();
+    await expect(page.getByText(ru.card.position(1, 1, block1Steps.length))).toBeVisible();
+    await expect(banner.getByText(ru.header.tagLocal, { exact: true })).toBeVisible();
+    await expect(banner.getByText(ru.header.tagRepo, { exact: true })).toHaveCount(0);
+
+    // «‹ Сценарии» (SPEC §4.1:241) возвращает в каталог, строка «моего» на месте.
+    await page.getByRole('button', { name: ru.header.back }).click();
+    await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
+    const row = local.locator(`tr[data-scenario-id="${FIX_ID}"]`);
+    await expect(row).toBeVisible();
+    await expect(row.getByRole('button', { name: fixture.title })).toBeVisible();
   });
 });
 
