@@ -11,7 +11,8 @@
     "check": "tsc --noEmit && eslint . && vitest run && prettier --check .",
     "test": "vitest run",
     "e2e": "playwright test",
-    "pm:snapshot": "node --experimental-strip-types scripts/pm-snapshot.ts"
+    "pm:snapshot": "node --experimental-strip-types scripts/pm-snapshot.ts",
+    "fixture": "node --experimental-strip-types scripts/make-fixture.ts"
   },
   "dependencies": {
     "@fontsource/open-sans": "^5.3.0",

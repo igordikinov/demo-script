@@ -5,7 +5,7 @@
 // план DN-04): книга собирается и тут же читается обратно тем же SheetJS.
 // Статический `import ... from 'xlsx'` вне src/** ESLint не запрещает
 // (tests/eslintRules.test.ts, план п.3).
-import { read, type WorkBook } from 'xlsx';
+import { CFB, read, type WorkBook } from 'xlsx';
 import { writeWorkbook, type SheetSpec } from '../src/excel/write';
 
 const BASE_READ_OPTS = { type: 'array', cellDates: false } as const;
@@ -148,4 +148,140 @@ describe('writeWorkbook', () => {
       await expect(writeWorkbook([{ name: 'S', rows: [[n]] }])).rejects.toBeTruthy();
     },
   );
+});
+
+// SPEC §6:371, §11:622 (решение DN-akk): SheetJS Community Edition не пишет
+// <pane> в XML листа — freezeRows дописывает эту строку после X.write через
+// встроенный в SheetJS CFB. Хелперы zipText/sheetXml разбирают zip средствами
+// CFB.read/CFB.find; тот же хелпер дословно повторён в tests/template.test.ts
+// (общий файл-хелпер, копия допустима).
+interface CfbEntry {
+  content: Uint8Array | number[];
+}
+interface CfbContainer {
+  FileIndex: CfbEntry[];
+}
+interface CfbApi {
+  read(data: Uint8Array, opts: { type: 'array' }): CfbContainer;
+  find(container: CfbContainer, path: string): CfbEntry | null;
+}
+const cfb = CFB as CfbApi;
+
+function toText(content: Uint8Array | number[]): string {
+  // Buffer (Node) и Uint8Array (браузер) — дефект D3.
+  const bytes = content instanceof Uint8Array ? content : Uint8Array.from(content);
+  return new TextDecoder().decode(bytes);
+}
+
+/** Текст файла внутри zip; путь — без ведущего `/`, дефект D1 (CFB.find ищет только с ним). */
+function zipText(bytes: Uint8Array, path: string): string {
+  const container = cfb.read(bytes, { type: 'array' });
+  const entry = cfb.find(container, '/' + path);
+  if (!entry) throw new Error(`not found in zip: ${path}`);
+  return toText(entry.content);
+}
+
+/** XML листа по его имени — через xl/workbook.xml и xl/_rels/workbook.xml.rels, а не по позиции. */
+function sheetXml(bytes: Uint8Array, name: string): string {
+  const wbXml = zipText(bytes, 'xl/workbook.xml');
+  const sheetMatch = wbXml.match(
+    new RegExp(`<sheet name="${name}" sheetId="\\d+" r:id="(rId\\d+)"/>`),
+  );
+  const rid = sheetMatch?.[1];
+  if (rid === undefined) throw new Error(`sheet not found in workbook.xml: ${name}`);
+  const relsXml = zipText(bytes, 'xl/_rels/workbook.xml.rels');
+  const relMatch = relsXml.match(new RegExp(`Id="${rid}"[^>]*Target="([^"]+)"`));
+  const target = relMatch?.[1];
+  if (target === undefined) throw new Error(`relationship not found: ${rid}`);
+  return zipText(bytes, 'xl/' + target);
+}
+
+/** Локальные заголовки zip по порядку записи (сигнатура `PK\x03\x04` = 0x04034b50). */
+function localHeaders(bytes: Uint8Array): { stamp: number }[] {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const headers: { stamp: number }[] = [];
+  let off = 0;
+  while (off + 4 <= bytes.length && view.getUint32(off, true) === 0x04034b50) {
+    headers.push({ stamp: view.getUint32(off + 10, true) });
+    const nameLen = view.getUint16(off + 26, true);
+    const extraLen = view.getUint16(off + 28, true);
+    const csz = view.getUint32(off + 18, true);
+    off += 30 + nameLen + extraLen + csz;
+  }
+  return headers;
+}
+
+const PANE2 = '<pane ySplit="2" topLeftCell="A3" state="frozen"/>';
+
+describe('freezeRows (DN-akk, SPEC §6:371)', () => {
+  it('W1: freezeRows=2 у «Блок 1» — PANE2 в его XML, у остальных листов <pane нет', async () => {
+    const sheets: SheetSpec[] = [
+      { name: '_Сценарий', rows: [['a']] },
+      { name: 'Блок 1', rows: [['t'], ['№ шага', 'Шаг']], freezeRows: 2 },
+      { name: '_Инструкция', rows: [['x']] },
+    ];
+    const bytes = await writeWorkbook(sheets);
+    expect(sheetXml(bytes, 'Блок 1')).toContain(PANE2);
+    expect(sheetXml(bytes, '_Сценарий')).not.toContain('<pane');
+    expect(sheetXml(bytes, '_Инструкция')).not.toContain('<pane');
+  });
+
+  it('W2: freezeRows=1 — pane ySplit="1" topLeftCell="A2"', async () => {
+    const bytes = await writeWorkbook([{ name: 'S', rows: [['x'], ['y']], freezeRows: 1 }]);
+    expect(sheetXml(bytes, 'S')).toContain('<pane ySplit="1" topLeftCell="A2" state="frozen"/>');
+  });
+
+  it('W3: без freezeRows ни один лист не содержит <pane', async () => {
+    const sheets: SheetSpec[] = [
+      { name: '_Сценарий', rows: [['a']] },
+      { name: 'Блок 1', rows: [['t'], ['№ шага', 'Шаг']] },
+    ];
+    const bytes = await writeWorkbook(sheets);
+    expect(sheetXml(bytes, '_Сценарий')).not.toContain('<pane');
+    expect(sheetXml(bytes, 'Блок 1')).not.toContain('<pane');
+  });
+
+  it('W4: два вызова с тем же входом дают побайтово равные результаты', async () => {
+    const sheets: SheetSpec[] = [
+      { name: '_Сценарий', rows: [['a']] },
+      { name: 'Блок 1', rows: [['t'], ['№ шага', 'Шаг']], freezeRows: 2 },
+      { name: '_Инструкция', rows: [['x']] },
+    ];
+    const first = await writeWorkbook(sheets);
+    const second = await writeWorkbook(sheets);
+    expect(Buffer.from(second)).toEqual(Buffer.from(first));
+  });
+
+  it('W5: локальные заголовки zip не несут мусорный CFB-timestamp (дефект D2)', async () => {
+    const sheets: SheetSpec[] = [
+      { name: '_Сценарий', rows: [['a']] },
+      { name: 'Блок 1', rows: [['t'], ['№ шага', 'Шаг']], freezeRows: 2 },
+      { name: '_Инструкция', rows: [['x']] },
+    ];
+    const bytes = await writeWorkbook(sheets);
+    const headers = localHeaders(bytes);
+    expect(headers.length).toBeGreaterThan(0);
+    for (const header of headers) expect(header.stamp).toBe(0);
+  });
+
+  it('W6: книга читается read() — порядок листов и заголовок «№ шага» на месте', async () => {
+    const sheets: SheetSpec[] = [
+      { name: '_Сценарий', rows: [['a']] },
+      { name: 'Блок 1', rows: [['t'], ['№ шага', 'Шаг']], freezeRows: 2 },
+      { name: '_Инструкция', rows: [['x']] },
+    ];
+    const bytes = await writeWorkbook(sheets);
+    const wb = read(bytes, { type: 'array' });
+    expect(wb.SheetNames).toEqual(['_Сценарий', 'Блок 1', '_Инструкция']);
+    expect(wb.Sheets['Блок 1']?.A2?.v).toBe('№ шага');
+  });
+
+  it.each([
+    ['0', 0],
+    ['-1', -1],
+    ['1.5', 1.5],
+    ['NaN', Number.NaN],
+  ])('W7: отклоняет промис при freezeRows = %s', async (_label, freezeRows) => {
+    await expect(writeWorkbook([{ name: 'S', rows: [['x']], freezeRows }])).rejects.toBeTruthy();
+  });
 });

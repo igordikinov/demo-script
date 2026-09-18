@@ -13,6 +13,18 @@ export interface ColumnSpec {
   readonly required: boolean;
 }
 
+/**
+ * Служебный лист с названием, модулем и картой сценария (§3.2:109, шаблон §6:370).
+ * src/excel/read.ts пока держит свою копию имени и ключей; дубль убирает bd DN-wa4.
+ */
+export const SCENARIO_SHEET = '_Сценарий';
+
+/**
+ * Ключи колонки A листа `_Сценарий` в написании шаблона (§3.2:109, §6:370).
+ * Читатель сравнивает их после normalizeHeader — регистр не важен.
+ */
+export const SCENARIO_KEYS = { title: 'Название', module: 'Модуль', map: 'Карта' } as const;
+
 export const COLUMNS: readonly ColumnSpec[] = [
   { field: 'id', header: '№ шага', aliases: ['№', 'номер шага'], required: true },
   { field: 'title', header: 'Шаг', aliases: ['название шага'], required: true },
