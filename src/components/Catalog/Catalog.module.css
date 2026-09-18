@@ -1,0 +1,360 @@
+/*
+ * Каталог A5 и A5.1 — SPEC §4.2:247–257. Стили — design/catalog-mockup.html:35–60
+ * (дальше CAT), разметка — CAT:96–154 (A5) и :162–177 (A5.1), снимок —
+ * design/v3-catalog.png. Только var(--…) из tokens.css (tests/cssColors.test.ts).
+ */
+
+/* CAT:35 — отступ 32 px (§4.2:248) */
+.catalog {
+  padding: var(--scp-spacing-3xl);
+}
+
+/* CAT:36 — max-width 1120 px (§4.2:248), без центрирования, как на v3-catalog.png */
+.page {
+  max-width: var(--dn-catalog-max-width);
+}
+
+/* CAT:37 */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-lg);
+  margin-bottom: var(--scp-spacing-2xl);
+}
+
+/* CAT:38 — 24/32, 600 (§4.2:247) */
+.title {
+  margin: 0;
+  font-size: var(--scp-font-sizes-24);
+  line-height: var(--scp-line-height-32);
+  font-weight: var(--scp-font-weight-semi-bold);
+}
+
+/* CAT:100 — .spacer перед полем: поиск прижат вправо */
+.search {
+  margin-left: auto;
+}
+
+/*
+ * CAT:40. overflow: hidden — фон строки при hover не выходит за скруглённые
+ * углы карточки у последней строки.
+ */
+.section {
+  margin-bottom: var(--scp-spacing-2xl);
+  overflow: hidden;
+  border: 1px solid var(--scp-color-neutral-100);
+  border-radius: var(--scp-border-radius-md);
+  background: var(--scp-bg-surface);
+}
+
+/* CAT:41; подпись раздела — SectionCaption (CAT:42, §5:364) */
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--scp-spacing-md);
+  padding: var(--scp-spacing-lg) var(--scp-spacing-xl) var(--scp-spacing-md);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+}
+
+/* CAT:43 */
+.count {
+  font-size: var(--scp-font-sizes-12);
+  color: var(--scp-color-neutral-500);
+}
+
+/*
+ * Место под число, пока его нет (загрузка и ошибка «Общих», §4.2:256, §3.7:230).
+ * Пробел нулевой ширины даёт строку 12/20 с базовой линией, как у числа: шапка
+ * 49 px в любом состоянии (CAT:41–43), подпись не сдвигается.
+ */
+.countPlaceholder::before {
+  content: '\200b';
+}
+
+/* CAT:44 */
+.hint {
+  margin-left: auto;
+  font: var(--scp-font-body-s), sans-serif;
+  color: var(--scp-color-neutral-500);
+}
+
+/*
+ * CAT:45. Раскладка fixed: ширины колонок заданы шапкой (ниже) и не зависят от
+ * содержимого, загрузки и формата даты (§4.2:253) — колонки «Общих» и «Моих»
+ * совпадают. Колонка «Сценарий» — остаток ширины.
+ */
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* CAT:46 */
+.table th {
+  padding: var(--dn-catalog-th-padding);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+  font: var(--scp-xs-semibold), sans-serif;
+  color: var(--scp-color-neutral-600);
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* CAT:47 */
+.table td {
+  padding: var(--scp-spacing-md) var(--scp-spacing-xl);
+  border-bottom: 1px solid var(--scp-color-neutral-100);
+  vertical-align: middle;
+}
+
+/* CAT:48 */
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/*
+ * Ширины колонок (CAT:113, :138) — токены «Каталог (DN-24)» в tokens.css.
+ * «Сценарий» без ширины: при max-width 1120 (§4.2:248) ему остаётся 46%, как
+ * CAT:113, на узком окне — меньше, остальные колонки не сжимаются.
+ */
+.moduleCol {
+  width: var(--dn-catalog-module-col-width);
+}
+
+.blocksCol {
+  width: var(--dn-catalog-blocks-col-width);
+}
+
+.stepsCol {
+  width: var(--dn-catalog-steps-col-width);
+}
+
+.linkCol {
+  width: var(--dn-catalog-link-col-width);
+}
+
+.dateCol {
+  width: var(--dn-catalog-date-col-width);
+}
+
+/*
+ * Колонка действия 48 px (§4.2:252): отступ 8 + корзина 32 + 8. В макете у ячейки
+ * общий отступ 20 px, и автораскладка растягивает её до ~72 px (v3-catalog.png).
+ */
+.table .actionCol {
+  width: var(--dn-catalog-action-col-width);
+  padding-inline: var(--scp-spacing-sm);
+  text-align: center;
+}
+
+/* CAT:53–54 — числа вправо, табличные цифры */
+.table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* CAT:49 — вся строка открывает сценарий (§4.2:254) */
+.row {
+  cursor: pointer;
+}
+
+/*
+ * CAT:50–52 — hover и фокус: фон --brand-50, левый акцент 3 px (§4.2:254).
+ * Правила фокуса с :has() отдельно от hover: браузер без :has() отбросил бы
+ * весь список селекторов вместе с hover.
+ */
+.row:hover td {
+  background: var(--brand-50);
+}
+
+.row:has(.open:focus-visible) td {
+  background: var(--brand-50);
+}
+
+.row:hover td:first-child {
+  box-shadow: inset var(--dn-catalog-accent-width) 0 0 var(--brand-700);
+}
+
+.row:has(.open:focus-visible) td:first-child {
+  box-shadow: inset var(--dn-catalog-accent-width) 0 0 var(--brand-700);
+}
+
+/*
+ * CAT:55 — название 600. Кнопка без собственного вида: фокус показывает строка
+ * целиком (правила выше). Своя обводка снимается, только если есть :has();
+ * иначе фокус видно по ней.
+ */
+.open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: var(--scp-font-weight-semi-bold);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.open:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 2px;
+}
+
+@supports selector(:has(*)) {
+  .open:focus-visible {
+    outline: none;
+  }
+}
+
+/* CAT:56 — имя файла 12 px серым под названием (§4.2:252) */
+.sub {
+  margin-top: var(--dn-catalog-sub-gap);
+  font: var(--scp-font-body-s), sans-serif;
+  color: var(--scp-color-neutral-500);
+}
+
+/* Ширина колонки задана (.table): длинные название и имя файла — с многоточием */
+.titleText,
+.sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Модуль — свободный текст (§3.2:109): длинный обрезается многоточием, колонку
+ * не раздвигает. У inline-flex Badge многоточия нет, поэтому здесь он блок.
+ */
+.module [data-tone='module'] {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* CAT:57 */
+.date {
+  color: var(--scp-color-neutral-600);
+  white-space: nowrap;
+}
+
+/* CAT:118 — шеврон › брендом, виден при hover и фокусе строки (§4.2:254) */
+.chevron {
+  display: block;
+  width: var(--dn-catalog-chevron-size);
+  height: var(--dn-catalog-chevron-size);
+  margin-inline: auto;
+  color: var(--brand-700);
+  visibility: hidden;
+}
+
+.row:hover .chevron {
+  visibility: visible;
+}
+
+.row:has(.open:focus-visible) .chevron {
+  visibility: visible;
+}
+
+/*
+ * Строка вместо таблицы: «Ничего не найдено», «Общих сценариев пока нет», ошибка
+ * «Общих» с «Повторить» (§4.2:247, :256, §3.7:230). В макете их нет — отступы как у td.
+ */
+.message {
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-md);
+  margin: 0;
+  padding: var(--scp-spacing-md) var(--scp-spacing-xl);
+  color: var(--scp-color-neutral-600);
+}
+
+/*
+ * Строки-скелеты при загрузке «Общих» (§4.2:256); в макете их нет, без анимации.
+ * Строка той же высоты, что настоящая (63 px): в первой ячейке две строки —
+ * под название (20 px, CAT:47) и под имя файла (2 + 16 px, CAT:56). Полосы
+ * по центру своих строк.
+ */
+.skeletonLine {
+  display: flex;
+  align-items: center;
+  height: var(--scp-line-height-20);
+}
+
+.skeletonSubLine {
+  height: var(--scp-line-height-16);
+  margin-top: var(--dn-catalog-sub-gap);
+}
+
+.skeletonBar {
+  display: block;
+  width: 100%;
+  height: var(--dn-catalog-skeleton-height);
+  border-radius: var(--scp-border-radius-sm);
+  background: var(--scp-color-neutral-100);
+}
+
+.skeletonTitle {
+  width: 60%;
+}
+
+.skeletonFile {
+  width: 30%;
+  height: var(--dn-catalog-skeleton-sub-height);
+}
+
+.skeletonModule {
+  width: 40%;
+}
+
+/* CAT:58 — пустые «Мои» A5.1: пунктирная рамка --brand-200 (§4.2:257) */
+.empty {
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-xl);
+  margin: var(--scp-spacing-xl);
+  padding: var(--dn-catalog-empty-padding);
+  border: 1px dashed var(--brand-200);
+  border-radius: var(--scp-border-radius-md);
+}
+
+/* CAT:170 — upload 32 px, серый как разделитель шапки (CAT:24) */
+.emptyIcon {
+  flex: 0 0 auto;
+  width: var(--dn-catalog-empty-icon-size);
+  height: var(--dn-catalog-empty-icon-size);
+  color: var(--scp-color-neutral-300);
+}
+
+/* CAT:59 */
+.emptyText {
+  flex: 1;
+  margin: 0;
+  color: var(--scp-color-neutral-600);
+}
+
+/* CAT:60 — «Скачать шаблон»: кнопка в виде ссылки, как в окне загрузки */
+.link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--scp-font-sizes-12);
+  color: var(--scp-color-brand-700);
+  text-decoration: underline;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.link:hover {
+  color: var(--scp-color-brand-800);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 2px;
+}

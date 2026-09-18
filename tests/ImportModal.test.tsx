@@ -114,7 +114,10 @@ function probeState(): ProbeSnapshot {
 }
 
 function uploadButton(): HTMLElement {
-  return screen.getByRole('button', { name: ru.header.upload });
+  // Скоуп на <header> (role="banner"): пустые «Мои» (A5.1, SPEC §4.2:257,
+  // DN-24) рисуют свою primary-кнопку с тем же текстом ru.catalog.upload ===
+  // ru.header.upload, без скоупа getByRole находит два элемента.
+  return within(screen.getByRole('banner')).getByRole('button', { name: ru.header.upload });
 }
 
 /** Клик по кнопке шапки, дожидается появления диалога (SPEC §4.8:329).

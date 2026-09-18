@@ -3,16 +3,25 @@
 // «Failed to resolve import»). Атрибуты и порядок <path> сверены дословно с
 // прежними Header/icons.tsx и ScenarioScheme/icons.tsx — design/Демо-навигатор
 // v2.dc.html:37 (upload), :56 (стрелка), :72 и :109 (внешняя ссылка),
-// design/catalog-mockup.html:187 (шеврон ‹). Перенос иконок в общий модуль не
+// design/catalog-mockup.html:187 (шеврон ‹), :102 (поиск), :118 (шеврон › у
+// строки каталога), :143 (корзина у «моих»). Перенос иконок в общий модуль не
 // должен изменить вид, поэтому здесь проверяются все атрибуты SVG, а не
 // только data-icon. width/height нарочно не заданы: размер — из CSS
 // потребителя (SPEC §5:358 — хардкод в *.tsx запрещён).
+//
+// SearchIcon: querySelectorAll('path') ниже не видит <circle> макета
+// (CAT:102 — cx=11 cy=11 r=7), поэтому в `paths` — только отрезок-ручка лупы;
+// сама окружность здесь не проверяется (ограничение общего чек-листа этого
+// файла, не самой иконки).
 import type { ComponentType } from 'react';
 import { render } from '@testing-library/react';
 import {
   ArrowRightIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   ExternalLinkIcon,
+  SearchIcon,
+  TrashIcon,
   UploadIcon,
 } from '../src/components/ui/icons';
 
@@ -47,6 +56,24 @@ const cases: IconCase[] = [
     Component: ExternalLinkIcon,
     icon: 'external-link',
     paths: ['M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6', 'M15 3h6v6', 'M10 14L21 3'],
+  },
+  {
+    name: 'SearchIcon',
+    Component: SearchIcon,
+    icon: 'search',
+    paths: ['M20 20l-3.5-3.5'],
+  },
+  {
+    name: 'ChevronRightIcon',
+    Component: ChevronRightIcon,
+    icon: 'chevron-right',
+    paths: ['M9 6l6 6-6 6'],
+  },
+  {
+    name: 'TrashIcon',
+    Component: TrashIcon,
+    icon: 'trash',
+    paths: ['M3 6h18', 'M8 6V4h8v2', 'M19 6l-1 14H6L5 6'],
   },
 ];
 

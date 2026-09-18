@@ -594,4 +594,42 @@
   --dn-import-row-col-width: 70px;
   /* Отчёт длиннее 12 строк прокручивается, высота 360 px (SPEC §4.8:339) */
   --dn-import-report-max-height: 360px;
+
+  /* ------------------------------------------------------------------ */
+  /* Каталог (DN-24): design/catalog-mockup.html:35–60, :100–174;       */
+  /* SPEC §4.2:247–257                                                  */
+  /* ------------------------------------------------------------------ */
+
+  /* Ширина контента (CAT:36, §4.2:248) */
+  --dn-catalog-max-width: 1120px;
+  /* Поле поиска (CAT:39, §4.2:247) и его иконка (CAT:102 svg 16×16) */
+  --dn-search-width: 320px;
+  --dn-search-icon-size: 16px;
+  /* Колонки таблицы, table-layout: fixed (CAT:113, :138). Ширины — как в     */
+  /* макете на 1440 (CAT:45 auto) с округлением; вмещают заголовки 12 px 600  */
+  /* (CAT:46) и «сегодня, ЧЧ:ММ» 14 px (CAT:15 body, ≈97 px, §4.2:253) при  */
+  /* отступах 20 + 20 (CAT:47). Сумма 604 px: «Сценарию» при max-width 1120 */
+  /* остаётся 1118 − 604 = 514 px = 46% (CAT:113)                           */
+  --dn-catalog-module-col-width: 100px;
+  --dn-catalog-blocks-col-width: 96px;
+  --dn-catalog-steps-col-width: 92px;
+  --dn-catalog-link-col-width: 124px;
+  --dn-catalog-date-col-width: 144px;
+  /* Колонка действия (§4.2:252): 8 + 32 (корзина) + 8 */
+  --dn-catalog-action-col-width: 48px;
+  /* Заголовки колонок (CAT:46 padding: 10px 20px) */
+  --dn-catalog-th-padding: 10px var(--scp-spacing-xl);
+  /* Имя файла под названием (CAT:56 margin-top: 2px) */
+  --dn-catalog-sub-gap: 2px;
+  /* Левый акцент строки при hover и фокусе (CAT:52, §4.2:254) */
+  --dn-catalog-accent-width: 3px;
+  /* Шеврон › (CAT:118 svg 18×18) */
+  --dn-catalog-chevron-size: 18px;
+  /* Пустые «Мои» A5.1: отступ рамки (CAT:58) и иконка upload (CAT:170 svg 32×32) */
+  --dn-catalog-empty-padding: 28px;
+  --dn-catalog-empty-icon-size: 32px;
+  /* Строка-скелет (§4.2:256; в макете скелетов нет): высота полос и       */
+  /* полосы под имя файла                                                  */
+  --dn-catalog-skeleton-height: 12px;
+  --dn-catalog-skeleton-sub-height: 8px;
 }

@@ -1,0 +1,55 @@
+/*
+ * Поле поиска каталога (SPEC §4.2:247): design/catalog-mockup.html:39 (.search),
+ * иконка — :102. Только var(--…) из tokens.css.
+ */
+
+/* CAT:39 — 320×40, рамка --line-2, радиус 4, отступ 0 12, промежуток 8, цвет --text-3 */
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-sm);
+  width: var(--dn-search-width);
+  height: var(--scp-btn-height-md);
+  padding: 0 var(--scp-spacing-md);
+  border: 1px solid var(--scp-color-neutral-150);
+  border-radius: var(--scp-radius-button);
+  background: var(--scp-bg-surface);
+  color: var(--scp-color-neutral-500);
+}
+
+/* В макете фокуса нет: рамка брендом, чтобы фокус был виден (обводка поля снята ниже). */
+.field:focus-within {
+  border-color: var(--brand-700);
+}
+
+/* CAT:102 — svg 16×16 */
+.icon {
+  flex: 0 0 auto;
+  width: var(--dn-search-icon-size);
+  height: var(--dn-search-icon-size);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  appearance: none;
+  font: var(--scp-body-regular), sans-serif;
+  color: var(--scp-content-primary);
+}
+
+/* CAT:39 — текст-подсказка цветом --text-3 */
+.input::placeholder {
+  color: var(--scp-color-neutral-500);
+  opacity: 1;
+}
+
+/* В макете у поля нет крестика очистки (CAT:101–104). */
+.input::-webkit-search-cancel-button,
+.input::-webkit-search-decoration {
+  appearance: none;
+}
