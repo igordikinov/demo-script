@@ -170,3 +170,58 @@
   font: var(--scp-xs-regular), sans-serif;
   color: var(--scp-color-neutral-600);
 }
+
+/* Блок совпадения названия A4′ (design/catalog-mockup.html:70–74, :225–229;
+   SPEC §4.8:341–344). Жёлтый — цвета warning-пилюли §5:364. */
+.duplicate {
+  margin-top: var(--scp-spacing-lg);
+  padding: var(--scp-spacing-md) var(--scp-spacing-lg);
+  border-radius: var(--scp-border-radius-sm);
+  background: var(--scp-system-warning-background);
+  color: var(--scp-color-warning-800);
+}
+
+.duplicateText {
+  margin: 0;
+}
+
+/* Название в тексте блока (CAT:71 `.notice b`, :225): жирное и темнее строки. */
+.duplicateTitle {
+  font-weight: var(--scp-font-weight-bold);
+  color: var(--dn-import-duplicate-title-color);
+}
+
+/* Строка переключателя (CAT:72). */
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--scp-spacing-sm);
+  margin-top: var(--dn-import-option-gap);
+  color: var(--scp-content-primary);
+  cursor: pointer;
+}
+
+/* Кружок переключателя 16 px (CAT:73–74): рамка серая, выбранный — заливка
+   бренда с белым кольцом внутри. */
+.radio {
+  appearance: none;
+  flex: 0 0 auto;
+  width: var(--scp-radio-icon-size-md);
+  height: var(--scp-radio-icon-size-md);
+  margin: 0;
+  border: var(--dn-import-radio-border-width) solid var(--scp-color-neutral-500);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.radio:checked {
+  border-color: var(--scp-color-brand-700);
+  background: var(--scp-color-brand-700);
+  box-shadow: inset 0 0 0 var(--dn-import-radio-ring) var(--scp-color-neutral-0);
+}
+
+.radio:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 2px;
+}

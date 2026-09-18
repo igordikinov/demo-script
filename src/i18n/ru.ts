@@ -291,6 +291,18 @@ export const ru = {
     /** Совпадение названия; `date` — готовая строка (SPEC §4.8:337). */
     duplicate: (title: string, date: string): string =>
       `В „Моих“ уже есть сценарий „${title}“, загружен ${date}.`,
+    /**
+     * Та же строка `duplicate` частями: название в блоке выделено (SPEC §4.8:341,
+     * design/catalog-mockup.html:71, :225). `before + title + after` === `duplicate(title, date)`.
+     */
+    duplicateParts: (
+      title: string,
+      date: string,
+    ): { readonly before: string; readonly title: string; readonly after: string } => ({
+      before: 'В „Моих“ уже есть сценарий ',
+      title: `„${title}“`,
+      after: `, загружен ${date}.`,
+    }),
     /** Переключатель по умолчанию (SPEC §4.8:339). */
     replaceOption: 'Заменить его',
     /** Переключатель; `newTitle` — уже с суффиксом, см. `numberedTitle` (SPEC §4.8:340). */

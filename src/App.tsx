@@ -6,6 +6,7 @@ import { useAppStore } from './state/context.ts';
 import { StoreProvider } from './state/store.tsx';
 import { Header } from './components/Header/Header.tsx';
 import { ImportModal } from './components/ImportModal/ImportModal.tsx';
+import { DeleteDialog } from './components/DeleteDialog/DeleteDialog.tsx';
 import { Catalog } from './components/Catalog/Catalog.tsx';
 import { Toast } from './components/ui/Toast.tsx';
 
@@ -19,6 +20,8 @@ export function AppShell() {
       <main>{state.scenario === null && <Catalog />}</main>
       {/* Монтируется на каждое открытие: после «Отмены» окно снова пустое. */}
       {modal?.kind === 'import' && <ImportModal />}
+      {/* Подтверждение удаления «моего» A5.2 (§4.2:255): его открывает корзина каталога. */}
+      {modal?.kind === 'delete' && <DeleteDialog scenarioId={modal.scenarioId} />}
       {/* restartKey={seq}: повтор того же текста перезапускает отсчёт; key не ставить — пересоздаст живой регион role="status". */}
       <Toast
         restartKey={toast?.seq}

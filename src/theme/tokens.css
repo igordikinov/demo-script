@@ -632,4 +632,18 @@
   /* полосы под имя файла                                                  */
   --dn-catalog-skeleton-height: 12px;
   --dn-catalog-skeleton-sub-height: 8px;
+
+  /* ------------------------------------------------------------------ */
+  /* Мои: A4′ и A5.2 (DN-25): design/catalog-mockup.html:70–74, :225–250 */
+  /* ------------------------------------------------------------------ */
+
+  /* Отступ переключателя в блоке совпадения (CAT:72 margin-top: 10px) */
+  --dn-import-option-gap: 10px;
+  /* Рамка переключателя (CAT:73 border: 2px) */
+  --dn-import-radio-border-width: 2px;
+  /* Кольцо выбранного переключателя (CAT:74 inset 0 0 0 3px #fff) */
+  --dn-import-radio-ring: 3px;
+  /* Название в тексте блока совпадения (CAT:71 .notice b { color: #6b2408 }); */
+  /* в дизайн-системе такого оттенка нет, ближайший --scp-color-warning-900   */
+  --dn-import-duplicate-title-color: #6b2408;
 }

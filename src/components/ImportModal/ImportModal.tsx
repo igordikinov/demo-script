@@ -1,11 +1,16 @@
-// Окно загрузки A4 — SPEC §4.8:329–350, разметка design/Демо-навигатор v2.dc.html:197–287.
-// Блока совпадения названия A4′ (§4.8:341–346), его переключателей и кнопок
-// «Заменить» / «Добавить» здесь нет — это DN-25.
+// Окно загрузки A4 и A4′ — SPEC §4.8:329–350, разметка design/Демо-навигатор v2.dc.html:197–287,
+// блок совпадения названия A4′ — design/catalog-mockup.html:208–234.
 //
-// Нажатие primary — по решению владельца от 18.09.2026 (bd DN-14), а не по
-// §4.8:350. Библиотеки «Мои» ещё нет (DN-25), поэтому сценарий в неё не
-// записывается: окно закрывается, сценарий открывается на первом шаге, тост
-// «Сценарий добавлен в „Мои“: …». Адрес страницы — DN-16.
+// Совпадение (§4.8:341–346) ищется только среди «Моих» (duplicate.ts). Под отчётом —
+// жёлтый блок с двумя переключателями, «Заменить его» выбран по умолчанию и снова
+// выбирается при каждом новом файле (§4.8:343). Подпись primary — «Добавить в мои»,
+// при совпадении — «Заменить» или «Добавить» по переключателю (§4.8:348).
+//
+// Нажатие (§4.8:350) пишет сценарий в «Мои» командой стора (§3.6:203–205): замена —
+// replaceMine (id прежний), иначе addMine (при «Добавить как новый» — с названием
+// «… (N)»). Затем окно закрывается, сохранённый сценарий открывается на первом шаге,
+// тост «добавлен» или «обновлён». Не хватило места — тост про квоту показал стор,
+// список не изменился: окно остаётся открытым. Адрес страницы — DN-16.
 //
 // Окно монтируется на каждое открытие (App.tsx), поэтому после «Отмены» оно
 // открывается пустым.
@@ -25,7 +30,9 @@ import {
 } from 'react';
 import type { ReadResult } from '../../excel/read.ts';
 import { loadXlsx } from '../../excel/xlsx.ts';
+import { formatScenarioDate } from '../../i18n/date.ts';
 import { ru } from '../../i18n/ru.ts';
+import type { Scenario } from '../../model/schema.ts';
 import { useAppStore } from '../../state/context.ts';
 import { Badge } from '../ui/Badge.tsx';
 import { Button } from '../ui/Button.tsx';
@@ -33,6 +40,7 @@ import { downloadTemplate } from '../ui/download.ts';
 import { UploadIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
 import { SectionCaption } from '../ui/SectionCaption.tsx';
+import { findDuplicate, numberedFreeTitle } from './duplicate.ts';
 import styles from './ImportModal.module.css';
 
 /** Файл не выбран → идёт разбор → разбор готов. */
@@ -41,8 +49,23 @@ type Phase =
   | { kind: 'checking'; fileName: string }
   | { kind: 'checked'; fileName: string; result: ReadResult };
 
+/** Переключатель блока совпадения: «Заменить его» или «Добавить как новый» (§4.8:343–344). */
+type DuplicateChoice = 'replace' | 'addNew';
+
 /** Отчёт длиннее стольких строк получает свою прокрутку (§4.8:339). */
 const REPORT_SCROLL_AFTER = 12;
+
+/**
+ * Текст блока A4′ (§4.8:341): целиком — имя группы переключателей, частями — на
+ * экране, где название выделено (CAT:71, :225). Дата — в формате каталога (§4.2:251).
+ */
+function duplicateNotice(existing: Scenario, now: Date) {
+  const date = formatScenarioDate(existing.loadedAt, now);
+  return {
+    label: ru.importModal.duplicate(existing.title, date),
+    parts: ru.importModal.duplicateParts(existing.title, date),
+  };
+}
 
 /** Разбор файла и снимки карт — отдельным чанком (см. шапку файла). */
 function loadParser() {
@@ -50,14 +73,16 @@ function loadParser() {
 }
 
 export function ImportModal() {
-  const { dispatch } = useAppStore();
+  const { state, dispatch, commands } = useAppStore();
   const [phase, setPhase] = useState<Phase>({ kind: 'empty' });
+  const [choice, setChoice] = useState<DuplicateChoice>('replace');
   const zoneRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Номер последнего разбора: ответ более раннего файла не затирает более поздний.
   const requestRef = useRef(0);
   const promptId = useId();
   const hintId = useId();
+  const choiceName = useId();
 
   // SheetJS и разбор грузятся при первом открытии окна (§1:20), чтобы после выбора
   // файла не ждать. Если загрузка не удалась, разбор повторит её и сам обработает отказ.
@@ -74,6 +99,8 @@ export function ImportModal() {
     requestRef.current += 1;
     const request = requestRef.current;
     setPhase({ kind: 'checking', fileName: file.name });
+    // Новый файл — «Заменить его» снова выбран по умолчанию (§4.8:343).
+    setChoice('replace');
     try {
       // Загрузка чанка и pmSnapshots() — внутри try: при их сбое зона тоже вернётся в начало.
       const [{ readImportFile }, { pmSnapshots }] = await loadParser();
@@ -118,14 +145,45 @@ export function ImportModal() {
   const scenario = hasDanger ? undefined : result?.scenario;
   // Кнопка недоступна, пока файл не выбран, не разобран или есть danger (§4.8:348).
   const canSubmit = scenario !== undefined;
+  // Совпадение — только при отсутствии ошибок (§4.8:341) и только среди «Моих» (§4.8:346).
+  const duplicate =
+    scenario === undefined ? undefined : findDuplicate(state.library.items, scenario.title);
+  const newTitle =
+    scenario === undefined || duplicate === undefined
+      ? null
+      : numberedFreeTitle(state.library.items, scenario.title);
+  const notice = duplicate === undefined ? null : duplicateNotice(duplicate, new Date());
 
+  let submitLabel: string;
+  if (duplicate === undefined) {
+    submitLabel = ru.importModal.submitAdd;
+  } else if (choice === 'replace') {
+    submitLabel = ru.importModal.submitReplace;
+  } else {
+    submitLabel = ru.importModal.submitAddNew;
+  }
+
+  // Одна команда «Моих» на событие (context.ts): вторая до перерисовки затёрла бы первую.
   const submit = (): void => {
     if (result === null || scenario === undefined) {
       return;
     }
+    let saved: Scenario | null;
+    let message: string;
+    if (duplicate !== undefined && choice === 'replace') {
+      saved = commands.replaceMine(duplicate.id, scenario);
+      message = ru.importModal.updated(result.summary.steps);
+    } else {
+      saved = commands.addMine(newTitle === null ? scenario : { ...scenario, title: newTitle });
+      message = ru.importModal.added(result.summary.steps);
+    }
+    // Места нет: тост про квоту уже показан стором, «Мои» прежние (§3.6:205).
+    if (saved === null) {
+      return;
+    }
     close();
-    dispatch({ type: 'openScenario', scenario });
-    dispatch({ type: 'showToast', message: ru.importModal.added(result.summary.steps) });
+    dispatch({ type: 'openScenario', scenario: saved });
+    dispatch({ type: 'showToast', message });
   };
 
   // Текст зоны до выбора, во время разбора и после (§4.8:331, :337). «Исправленный
@@ -154,7 +212,7 @@ export function ImportModal() {
         {ru.importModal.cancel}
       </Button>
       <Button variant="primary" disabled={!canSubmit} onClick={submit}>
-        {ru.importModal.submitAdd}
+        {submitLabel}
       </Button>
     </>
   );
@@ -276,6 +334,44 @@ export function ImportModal() {
               </tbody>
             </table>
           </div>
+          {/* A4′ (§4.8:341–344, CAT:225–229): под отчётом. Имя группы — текст блока
+              целиком (aria-label, а не aria-labelledby: вычисление имени по <p> с <b>
+              внутри в jsdom вставляет пробелы вокруг названия); нативные radio дают
+              роль, стрелки клавиатуры и место в Tab-ловушке Modal. */}
+          {notice !== null && newTitle !== null && (
+            <div className={styles.duplicate} role="radiogroup" aria-label={notice.label}>
+              {/* Название выделено, как в CAT:225 (`.notice b`, CAT:71). */}
+              <p className={styles.duplicateText}>
+                {notice.parts.before}
+                <b className={styles.duplicateTitle}>{notice.parts.title}</b>
+                {notice.parts.after}
+              </p>
+              <label className={styles.option}>
+                <input
+                  type="radio"
+                  className={styles.radio}
+                  name={choiceName}
+                  checked={choice === 'replace'}
+                  onChange={() => {
+                    setChoice('replace');
+                  }}
+                />
+                {ru.importModal.replaceOption}
+              </label>
+              <label className={styles.option}>
+                <input
+                  type="radio"
+                  className={styles.radio}
+                  name={choiceName}
+                  checked={choice === 'addNew'}
+                  onChange={() => {
+                    setChoice('addNew');
+                  }}
+                />
+                {ru.importModal.addAsNewOption(newTitle)}
+              </label>
+            </div>
+          )}
         </section>
       )}
     </Modal>

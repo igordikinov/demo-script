@@ -1,8 +1,6 @@
 // Окно загрузки A4 — SPEC §4.8 (:329-350) без блока совпадения названия A4′
-// (§4.8:341-346 — DN-25, здесь не проверяется). Решение владельца 18.09.2026
-// (bd DN-14): нажатие «Добавить в мои» не пишет в «Мои» (библиотеки ещё нет,
-// DN-25) — closeModal → openScenario на первом шаге → тост
-// ru.importModal.added(steps). ТК 19 — SPEC §8:415, дословно.
+// (§4.8:341-346): запись в «Мои», совпадение названий и удаление —
+// tests/import.test.tsx (bd DN-25). ТК 19 — SPEC §8:415, дословно.
 //
 // Эталон содержания сценария — tests/fixtures/deployment-demo.json/.xlsx
 // (CLAUDE.md: не придумывать содержание). Числа сводки {3 листа, 3 блока,
@@ -403,7 +401,7 @@ describe('Чистый файл (deployment-demo.xlsx) — SPEC §4.8:339, ТК 
   });
 });
 
-describe('Нажатие primary после чистого файла (SPEC §4.8:350, решение владельца 18.09.2026)', () => {
+describe('Нажатие primary после чистого файла (SPEC §4.8:350)', () => {
   it('окно закрывается, сценарий открыт на первом шаге, тост «добавлен», фокус на кнопке шапки', async () => {
     renderApp();
     const trigger = uploadButton();
@@ -421,6 +419,8 @@ describe('Нажатие primary после чистого файла (SPEC §4.
     expect(within(screen.getByRole('banner')).getByText(fixture.title)).toBeInTheDocument();
 
     const probe = probeState();
+    // id «моего» — 'my-' + слаг названия фикстуры (SPEC §3.6:203), см. tests/import.test.tsx.
+    expect(probe.scenarioId).toBe('my-deployment-demo-scenariy');
     expect(probe.stepId).toBe('1.1');
     await waitFor(() => expect(trigger).toHaveFocus());
   });

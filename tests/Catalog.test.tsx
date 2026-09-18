@@ -13,6 +13,7 @@
 // - now = 18.09.2026 12:00; ISO-строки — через new Date(local…).toISOString(),
 //   чтобы прогон не зависел от часового пояса машины (см. tests/date.test.ts).
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { AppShell } from '../src/App';
 import { StoreProvider } from '../src/state/store';
 import { useAppStore } from '../src/state/context';
 import { ScenarioSchema, type Scenario } from '../src/model/schema';
@@ -589,5 +590,82 @@ describe('Catalog: корзина «моих» (SPEC §4.2:255, часть ТК 
     const label = describedBy === null ? null : document.getElementById(describedBy);
     expect(label).not.toBeNull();
     expect(label).toHaveTextContent(mNew.title);
+  });
+});
+
+// ТК 29 (SPEC §8:425), окно удаления A5.2 (SPEC §4.2:255): рендерится на уровне
+// AppShell (src/App.tsx: modal?.kind === 'delete'), поэтому здесь — AppShell, а
+// не голый Catalog, как в остальных describe этого файла.
+describe('Catalog: ТК 29 — SPEC §8:425 (окно удаления A5.2)', () => {
+  function renderShell(items: Scenario[]) {
+    seedLibrary(items);
+    return render(
+      <StoreProvider fetchFn={sharedFetch()}>
+        <AppShell />
+        <Probe />
+      </StoreProvider>,
+    );
+  }
+
+  function trashOf(id: string): HTMLElement {
+    return within(findRow(localSection(), id)).getByRole('button', {
+      name: ru.catalog.deleteFromBrowser,
+    });
+  }
+
+  function storedLibraryIds(): string[] {
+    const raw = window.localStorage.getItem(LIBRARY_KEY);
+    if (raw === null) return [];
+    const parsed = JSON.parse(raw) as { items: Scenario[] };
+    return parsed.items.map((item) => item.id);
+  }
+
+  it('корзина → окно → «Удалить»: строки нет ни в каталоге, ни в localStorage, тост', async () => {
+    renderShell([mNew, mOld]);
+    const trash = trashOf(mNew.id);
+    trash.focus();
+    fireEvent.click(trash);
+
+    expect(probeState().scenarioId).toBeNull();
+    const dialog = screen.getByRole('dialog', { name: ru.deleteDialog.title });
+    expect(dialog).toHaveTextContent(ru.deleteDialog.body(mNew.title));
+
+    fireEvent.click(within(dialog).getByRole('button', { name: ru.deleteDialog.confirm }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(rowIds(localSection())).toEqual([mOld.id]);
+    expect(storedLibraryIds()).toEqual([mOld.id]);
+    expect(probeState().toast).toBe(ru.deleteDialog.deleted);
+    expect(probeState().scenarioId).toBeNull();
+  });
+
+  it('«Отмена»: без изменений, фокус возвращается на корзину', async () => {
+    renderShell([mNew, mOld]);
+    const before = window.localStorage.getItem(LIBRARY_KEY);
+    const trash = trashOf(mNew.id);
+    trash.focus();
+    fireEvent.click(trash);
+
+    const dialog = screen.getByRole('dialog', { name: ru.deleteDialog.title });
+    fireEvent.click(within(dialog).getByRole('button', { name: ru.deleteDialog.cancel }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(window.localStorage.getItem(LIBRARY_KEY)).toBe(before);
+    expect(rowIds(localSection())).toEqual([mNew.id, mOld.id]);
+    expect(probeState().toast).toBeNull();
+    expect(probeState().modal).toBeNull();
+    await waitFor(() => expect(trash).toHaveFocus());
+  });
+
+  it('удаление последнего «моего» → A5.1 (localEmpty)', async () => {
+    renderShell([mNew]);
+    const trash = trashOf(mNew.id);
+    fireEvent.click(trash);
+
+    const dialog = screen.getByRole('dialog', { name: ru.deleteDialog.title });
+    fireEvent.click(within(dialog).getByRole('button', { name: ru.deleteDialog.confirm }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(within(localSection()).getByText(ru.catalog.localEmpty)).toBeInTheDocument();
   });
 });
