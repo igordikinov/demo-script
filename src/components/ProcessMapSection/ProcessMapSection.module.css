@@ -1,0 +1,43 @@
+/*
+ * Встроенная карта процесса — SPEC §4.6:311, разметка design/Демо-навигатор
+ * v2.dc.html:171–181. Ширина — вся ширина main (v2:171: без max-width, в отличие
+ * от карточки); при узком окне прокручивается рамка, а не страница (§4.10).
+ * Только var(--…) из tokens.css (tests/cssColors.test.ts).
+ */
+
+/* v2:172 margin-top: 24px */
+.section {
+  margin-top: var(--scp-spacing-2xl);
+}
+
+/* Шапка: «PROCESS MAP» и этап (v2:173) */
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--scp-spacing-md);
+  padding-bottom: var(--scp-spacing-sm);
+}
+
+/* Этап (v2:175): 12/16, серый */
+.stage {
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-500);
+}
+
+/* Рамка с горизонтальной прокруткой (v2:177, §4.6:311) */
+.frame {
+  overflow-x: auto;
+  border: 1px solid var(--scp-color-neutral-100);
+  border-radius: var(--scp-border-radius-md);
+  background: var(--scp-background-primary);
+}
+
+/* iframe (v2:178, §4.6:311): ширина 100 %, min-width 1024px, высота 760px */
+.iframe {
+  display: block;
+  width: 100%;
+  min-width: var(--dn-pm-embed-min-width);
+  height: var(--dn-pm-embed-height);
+  border: 0;
+  background: var(--scp-background-primary);
+}

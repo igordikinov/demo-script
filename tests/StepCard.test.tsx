@@ -2,9 +2,11 @@
 // сохраняются), §4.9:354 (открытие экрана), §11:616 (подпись «Бизнес
 // ценность» без дефиса). ТК 16 (SPEC §8:412, дословно):
 // «"Открыть экран" → window.open(url, '_blank'), opener = null; null → тост».
-// ТК 8 (карта процесса) и ТК 21 (скриншоты) сюда не входят — они acceptance
-// DN-15 и visual-qa. Фикстура и способ её дополнить (schema/id/source/…) —
-// как в tests/reducer.test.ts: другой buildScenario держать незачем.
+// ТК 8 (SPEC §8:404) — часть про карточку («Узел процесса не сопоставлен»,
+// DN-15) тоже здесь; часть про отчёт окна загрузки — DN-06. ТК 21
+// (скриншоты) сюда не входит — это visual-qa. Фикстура и способ её дополнить
+// (schema/id/source/…) — как в tests/reducer.test.ts: другой buildScenario
+// держать незачем.
 import type { Dispatch } from 'react';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +22,10 @@ import {
 import { StoreProvider } from '../src/state/store';
 import { useAppStore } from '../src/state/context';
 import { ru } from '../src/i18n/ru';
+import { pmLink } from '../src/pm/pmLink';
+import { pmSnapshots } from '../src/pm/snapshots';
 import { StepCard } from '../src/components/StepCard/StepCard';
+import { PROCESS_MAP_EMBED_ID } from '../src/components/ProcessMapSection/ProcessMapSection';
 
 // Эталон содержания — tests/fixtures/deployment-demo.json (CLAUDE.md: не
 // придумывать содержание сценария).
@@ -343,10 +348,189 @@ describe('StepCard: секция «Комментарий» — только е�
   });
 });
 
-describe('StepCard: секция «Карта процесса» (§4.6) в DN-12 не рендерится', () => {
-  it('подписи «Карта процесса» нет — DN-15 инвертирует этот тест', () => {
-    renderCard(scenario, '1.10');
-    expect(screen.queryByText(ru.card.processMap)).not.toBeInTheDocument();
+/** Секция «Карта процесса», а не весь документ — тот же приём, что у screenSectionOf. */
+function mapSectionOf(container: HTMLElement): HTMLElement {
+  const heading = within(container).getByRole('heading', { level: 2, name: ru.card.processMap });
+  const section = heading.closest('section');
+  if (section === null) {
+    throw new Error('секция «Карта процесса» не найдена');
+  }
+  return section;
+}
+
+// Заголовок этапа 4 карты snp — из настоящего снимка src/data/pm/snp.json, а не выдуман.
+const stage4Title = pmSnapshots().snp.stages.find((s) => s.number === 4)?.title;
+if (stage4Title === undefined) {
+  throw new Error('в снимке snp нет этапа 4 (см. src/data/pm/snp.json)');
+}
+
+describe('StepCard: секция «Карта процесса» (SPEC §4.4:277, §4.6:306–309, v2:123–142)', () => {
+  it('1.10: этап и узел из фикстуры, кнопки «Показать на карте» и «Открыть в новой вкладке»', () => {
+    const step = findStep(scenario, '1.10');
+    const { container } = renderCard(scenario, '1.10');
+    const section = mapSectionOf(container);
+
+    expect(within(section).getByText(ru.processMap.stage(4, stage4Title))).toBeInTheDocument();
+    expect(within(section).getByText(ru.processMap.node(step.node))).toBeInTheDocument();
+
+    const showButton = within(section).getByRole('button', { name: ru.processMap.show });
+    expect(showButton).toHaveAttribute('data-variant', 'stroked');
+    expect(showButton).toHaveAttribute('aria-expanded', 'false');
+    expect(showButton).not.toHaveAttribute('aria-controls');
+
+    const openButton = within(section).getByRole('button', { name: ru.processMap.openInNewTab });
+    expect(openButton).toHaveAttribute('data-variant', 'neutral');
+    const icon = openButton.querySelector('svg[data-icon="external-link"]');
+    expect(icon).not.toBeNull();
+    // iconPosition="end" (v2:123–142) — иконка после текста: последний потомок
+    // кнопки (обёртка Button.tsx — span[aria-hidden]) содержит эту иконку.
+    expect(openButton.lastElementChild?.contains(icon)).toBe(true);
+
+    expect(within(section).queryByText(ru.processMap.notMapped)).not.toBeInTheDocument();
+  });
+
+  it('порядок секций (SPEC §4.4:277): «Экран» → «Карта процесса» → «Действие»', () => {
+    const { container } = renderCard(scenario, '1.10');
+    const screenSection = screenSectionOf(container);
+    const mapSection = mapSectionOf(container);
+    const actionHeading = screen.getByRole('heading', { level: 2, name: ru.card.action });
+    const actionSection = actionHeading.closest('section');
+    if (actionSection === null) {
+      throw new Error('секция «Действие» не найдена');
+    }
+
+    expect(
+      screenSection.compareDocumentPosition(mapSection) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      mapSection.compareDocumentPosition(actionSection) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('переключатель: клик «Показать на карте» → «Скрыть карту» (aria-expanded/aria-controls), повторный клик — обратно', () => {
+    const { container } = renderCard(scenario, '1.10');
+    const section = mapSectionOf(container);
+
+    act(() => {
+      within(section).getByRole('button', { name: ru.processMap.show }).click();
+    });
+    const hideButton = within(section).getByRole('button', { name: ru.processMap.hide });
+    expect(hideButton).toHaveAttribute('aria-expanded', 'true');
+    expect(hideButton).toHaveAttribute('aria-controls', PROCESS_MAP_EMBED_ID);
+
+    act(() => {
+      hideButton.click();
+    });
+    const showAgain = within(section).getByRole('button', { name: ru.processMap.show });
+    expect(showAgain).toHaveAttribute('aria-expanded', 'false');
+    expect(showAgain).not.toHaveAttribute('aria-controls');
+  });
+
+  // ТК 8 (SPEC §8:404, дословно): «Узел, которого нет в снимке → W04; в карточке
+  // «Узел процесса не сопоставлен»» — часть про карточку (часть про отчёт W04 в
+  // окне загрузки — DN-06). Случаи: пустой узел в фикстуре (3.7, 2.6), узел
+  // «constructor» (Object.hasOwn, а не `in`) и узел, который есть на карте mrp,
+  // но не на снимке выбранной карты snp (W04, SPEC §3.5:187).
+  const notMappedCases: { label: string; stepId: string; scenario: () => Scenario }[] = [
+    { label: '3.7: узел в фикстуре пуст', stepId: '3.7', scenario: () => scenario },
+    { label: '2.6: узел в фикстуре пуст', stepId: '2.6', scenario: () => scenario },
+    {
+      label: "1.10 с узлом 'constructor' — не свойство прототипа, а отсутствующий узел",
+      stepId: '1.10',
+      scenario: () => withStep(scenario, '1.10', { node: 'constructor' }),
+    },
+    {
+      label:
+        "1.10 с узлом 'formirovanie-zayavok-na-zakupku' — есть на карте mrp, но не на выбранной snp (W04)",
+      stepId: '1.10',
+      scenario: () => withStep(scenario, '1.10', { node: 'formirovanie-zayavok-na-zakupku' }),
+    },
+  ];
+
+  it.each(notMappedCases)(
+    '$label → «Узел процесса не сопоставлен», кнопок и «Узел:» нет',
+    ({ stepId, scenario: buildPatched }) => {
+      const { container } = renderCard(buildPatched(), stepId);
+      const section = mapSectionOf(container);
+
+      expect(within(section).getByText(ru.processMap.notMapped)).toBeInTheDocument();
+      expect(
+        within(section).queryByRole('button', { name: ru.processMap.show }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(section).queryByRole('button', { name: ru.processMap.hide }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(section).queryByRole('button', { name: ru.processMap.openInNewTab }),
+      ).not.toBeInTheDocument();
+      expect(within(section).queryByText(/^Узел:/)).not.toBeInTheDocument();
+    },
+  );
+
+  it('3.7 при initialState.mapOpen = true — карты и кнопки всё равно нет (SPEC §4.6:314)', () => {
+    const opened = appReducer(createInitialState(), {
+      type: 'openScenario',
+      scenario,
+      stepId: '3.7',
+    });
+    const { container } = render(
+      <StoreProvider initialState={{ ...opened, mapOpen: true }}>
+        <StepCard />
+      </StoreProvider>,
+    );
+    const section = mapSectionOf(container);
+    expect(within(section).getByText(ru.processMap.notMapped)).toBeInTheDocument();
+    expect(
+      within(section).queryByRole('button', { name: ru.processMap.show }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(section).queryByRole('button', { name: ru.processMap.hide }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("сценарий с map: 'mrp' — этап и название с карты mrp, а не snp", () => {
+    const mrpScenario = withStep({ ...scenario, map: 'mrp' }, '1.10', {
+      node: 'analiz-preduprezhdeniy',
+    });
+    const { container } = renderCard(mrpScenario, '1.10');
+    const section = mapSectionOf(container);
+    expect(
+      within(section).getByText(ru.processMap.stage(2, 'Обработка ошибок и предупреждений')),
+    ).toBeInTheDocument();
+  });
+
+  describe('«Открыть в новой вкладке» (SPEC §4.6:316, §4.9:354, DN-cx3)', () => {
+    it("вкладка открылась — window.open вызван ровно с (pmLink('snp', node).url, '_blank'), opener обнулён, тоста нет", () => {
+      const step = findStep(scenario, '1.10');
+      const link = pmLink('snp', step.node);
+      if (link === null) {
+        throw new Error('фикстура: у шага 1.10 нет узла карты snp');
+      }
+      const tab = { opener: window } as Window;
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(tab);
+      renderCard(scenario, '1.10');
+
+      act(() => {
+        screen.getByRole('button', { name: ru.processMap.openInNewTab }).click();
+      });
+
+      expect(openSpy).toHaveBeenCalledTimes(1);
+      expect(openSpy).toHaveBeenCalledWith(link.url, '_blank');
+      expect(tab.opener).toBeNull();
+      expect(screen.getByTestId('toast-probe').textContent).toBe('');
+    });
+
+    it('window.open вернул null (заблокировано) — тост «Браузер не дал открыть вкладку…»', () => {
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+      renderCard(scenario, '1.10');
+
+      act(() => {
+        screen.getByRole('button', { name: ru.processMap.openInNewTab }).click();
+      });
+
+      expect(openSpy).toHaveBeenCalled();
+      expect(screen.getByTestId('toast-probe')).toHaveTextContent(ru.openScreen.popupBlocked);
+    });
   });
 });
 

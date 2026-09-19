@@ -1,14 +1,19 @@
 // Карточка шага A3 (SPEC §4.4:271–283) и открытие экрана (§4.9:354).
 // Разметка — design/Демо-навигатор v2.dc.html:84–165. ‹ › и прокрутка к
 // карточке — §4.5:289, :291; клавиши ← → — hooks/useArrowKeys.ts (§4.5:290).
-// Секция «Карта процесса» и встроенная карта — DN-15 (§4.6).
+// Секция «Карта процесса» (§4.4:277, §4.6:306–309, v2:123–142) — между
+// «Экраном» и «Действием»; сама встроенная карта — ProcessMapSection под
+// карточкой (§4.4:285), здесь только кнопка, которая её раскрывает.
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '../../state/context.ts';
 import { activeStep, stepPosition } from '../../state/reducer.ts';
 import { ru } from '../../i18n/ru.ts';
 import { isScreenUrl } from '../../model/url.ts';
+import { pmLink } from '../../pm/pmLink.ts';
+import { PROCESS_MAP_EMBED_ID } from '../ProcessMapSection/ProcessMapSection.tsx';
 import { Button } from '../ui/Button.tsx';
 import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon } from '../ui/icons.tsx';
+import { openInNewTab } from '../ui/openInNewTab.ts';
 import { SectionCaption } from '../ui/SectionCaption.tsx';
 import styles from './StepCard.module.css';
 
@@ -58,22 +63,27 @@ export function StepCard() {
   // без кнопки и серого URL. Решение владельца DN-dkb; схема §3.1 не меняется.
   const hasUrl = isScreenUrl(step.url);
 
-  // §4.9:354 и ТК 16: null в ответ — тост. Без 'noopener': с ним window.open всегда
-  // возвращает null, и блокировку не отличить от открытия (решение DN-cx3), поэтому
-  // opener у открытой вкладки обнуляется вручную.
+  // «Открыть экран» (§4.9:354, ТК 16) и «Открыть в новой вкладке» (§4.6:316):
+  // вкладку открывает ui/openInNewTab.ts (без 'noopener', opener = null, DN-cx3).
+  // Браузер не дал открыть вкладку — тост §4.9:354; §4.6:316 ссылается на него же.
+  const openTab = (url: string) => {
+    if (!openInNewTab(url)) {
+      dispatch({ type: 'showToast', message: ru.openScreen.popupBlocked });
+    }
+  };
+
   // Повторная проверка адреса — страховка: обработчик вешается только при hasUrl,
-  // поэтому из DOM эта ветка недостижима и тестами не ловится (план DN-dkb, D2).
+  // поэтому из DOM эта ветка недостижима и тестами не ловится (DN-dkb).
   const handleOpen = () => {
     if (!isScreenUrl(step.url)) {
       return;
     }
-    const tab = window.open(step.url, '_blank');
-    if (tab === null) {
-      dispatch({ type: 'showToast', message: ru.openScreen.popupBlocked });
-      return;
-    }
-    tab.opener = null;
+    openTab(step.url);
   };
+
+  // null — узел пуст или его нет в снимке карты сценария (W04): «Узел процесса
+  // не сопоставлен», кнопок нет, встроенной карты тоже (§4.6:309, :314).
+  const link = pmLink(state.scenario.map, step.node);
 
   const valueEmpty = step.value === '';
   const resultEmpty = step.result === '';
@@ -125,7 +135,40 @@ export function StepCard() {
         {hasUrl && <div className={styles.url}>{step.url}</div>}
       </section>
 
-      {/* Карта процесса — DN-15 */}
+      {/* Карта процесса (§4.6:306–309, v2:123–142): подпись — в обоих состояниях. */}
+      <section className={styles.section}>
+        <SectionCaption as="h2">{ru.card.processMap}</SectionCaption>
+        {link === null ? (
+          <p className={`${styles.text} ${styles.muted}`}>{ru.processMap.notMapped}</p>
+        ) : (
+          <>
+            <div className={styles.mapRow}>
+              <span className={styles.mapStage}>
+                {ru.processMap.stage(link.stage, link.stageTitle)}
+              </span>
+              {/* Признак «карта раскрыта» — один на приложение (§4.6:313).
+                  aria-controls — только пока карта есть в DOM. */}
+              <Button
+                variant="stroked"
+                aria-expanded={state.mapOpen}
+                aria-controls={state.mapOpen ? PROCESS_MAP_EMBED_ID : undefined}
+                onClick={() => dispatch({ type: 'toggleMap' })}
+              >
+                {state.mapOpen ? ru.processMap.hide : ru.processMap.show}
+              </Button>
+              <Button
+                variant="neutral"
+                icon={<ExternalLinkIcon />}
+                iconPosition="end"
+                onClick={() => openTab(link.url)}
+              >
+                {ru.processMap.openInNewTab}
+              </Button>
+            </div>
+            <div className={styles.mapNode}>{ru.processMap.node(step.node)}</div>
+          </>
+        )}
+      </section>
 
       {step.action !== '' && (
         <section className={styles.section}>

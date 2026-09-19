@@ -46,7 +46,7 @@
   text-wrap: pretty;
 }
 
-/* Секции «Экран» и «Действие» (v2:101, :146). */
+/* Секции «Экран», «Карта процесса» и «Действие» (v2:101, :123, :146). */
 .section {
   padding: var(--scp-spacing-xl) 0;
   border-bottom: 1px solid var(--scp-color-neutral-100);
@@ -67,6 +67,29 @@
 
 /* URL под кнопкой (v2:113). */
 .url {
+  margin-top: var(--scp-spacing-sm);
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-500);
+  word-break: break-all;
+}
+
+/* Карта процесса: строка этапа с кнопками (v2:127, SPEC §4.6:308). */
+.mapRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--scp-spacing-md);
+  margin-top: var(--dn-card-caption-gap);
+}
+
+/* «Этап N · …» (v2:128): занимает остаток строки, кнопки переносятся вниз. */
+.mapStage {
+  flex: 1;
+  min-width: var(--dn-pm-stage-min-width);
+}
+
+/* «Узел: …» (v2:137): как URL экрана — 12/16, серый, перенос по символам. */
+.mapNode {
   margin-top: var(--scp-spacing-sm);
   font: var(--scp-xs-regular), sans-serif;
   color: var(--scp-color-neutral-500);

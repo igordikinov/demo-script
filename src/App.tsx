@@ -4,6 +4,8 @@
 // сценарий (DN-26) — раскладка v2:43–90: полоса схемы на всю ширину под шапкой
 // (§4.3:263), под ней main с карточкой шага (§4.4:273). Полоса — соседка main,
 // а не его часть, как в макете; у main в обоих вариантах меняется только класс.
+// Под карточкой в том же main — встроенная карта процесса, если раскрыта
+// (§4.4:285, §4.6:311; DN-15): соседка article, как в макете v2:171.
 // Клавиши ← → — §4.5:290 (DN-13): слушатель один на приложение, в AppShell.
 // AppShell выделен, чтобы хост тоста можно было проверить с initialState.
 import { useLayoutEffect, useRef } from 'react';
@@ -16,6 +18,7 @@ import { DeleteDialog } from './components/DeleteDialog/DeleteDialog.tsx';
 import { Catalog } from './components/Catalog/Catalog.tsx';
 import { ScenarioScheme } from './components/ScenarioScheme/ScenarioScheme.tsx';
 import { StepCard } from './components/StepCard/StepCard.tsx';
+import { ProcessMapSection } from './components/ProcessMapSection/ProcessMapSection.tsx';
 import { Toast } from './components/ui/Toast.tsx';
 import styles from './App.module.css';
 
@@ -46,7 +49,14 @@ export function AppShell() {
       <Header />
       {scenario !== null && <ScenarioScheme />}
       <main className={scenario === null ? undefined : styles.scenario}>
-        {scenario === null ? <Catalog /> : <StepCard />}
+        {scenario === null ? (
+          <Catalog />
+        ) : (
+          <>
+            <StepCard />
+            <ProcessMapSection />
+          </>
+        )}
       </main>
       {/* Монтируется на каждое открытие: после «Отмены» окно снова пустое. */}
       {modal?.kind === 'import' && <ImportModal />}
