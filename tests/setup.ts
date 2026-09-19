@@ -8,11 +8,38 @@ import '@testing-library/jest-dom/vitest';
 //
 // Файлы с `@vitest-environment node` (например tests/reducer.test.ts) этот setup
 // тоже выполняют, а в Node нет ни window, ни localStorage — весь блок под guard.
+// Полная заглушка MediaQueryList для window.matchMedia (см. ниже, DN-us0):
+// добавлять по одному свойству на месте вызова было бы неполно — интерфейс
+// требует onchange и все четыре метода подписки/отписки плюс dispatchEvent
+// (EventTarget). match — единственное, что меняется между вызовами.
+function mql(media: string, matches: boolean): MediaQueryList {
+  return {
+    matches,
+    media,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(() => true),
+  };
+}
+
 if (typeof window !== 'undefined') {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() => new Promise<Response>(() => {})),
+    );
+    // ProcessMapSection спрашивает matchMedia('(prefers-reduced-motion: reduce)')
+    // при раскрытии встроенной карты (SPEC §4.6:311, DN-us0) — jsdom 25 это
+    // свойство не определяет вовсе (не «не поддерживает», а отсутствует на
+    // window), поэтому без заглушки любой такой рендер падает необработанным
+    // исключением. По умолчанию — «уменьшение движения» выключено; отдельные
+    // тесты подменяют матчер через vi.stubGlobal('matchMedia', ...) сами.
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => mql(query, false)),
     );
     // localStorage не очищается между тестами одного файла сам по себе (jsdom) —
     // без этого «Мои» из одного теста были бы видны в следующем (SPEC §3.6:201).

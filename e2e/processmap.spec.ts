@@ -91,6 +91,54 @@ async function stubProcessMap(page: Page): Promise<string[]> {
   return requests;
 }
 
+/**
+ * Ждёт, пока `scrollY` не меняется 10 кадров подряд (предел — 300 кадров):
+ * и плавная анимация «Показать на карте» (SPEC §4.6:311, DN-us0), и мгновенный
+ * прыжок (reduce) успевают закончиться раньше предела — проба (окно 1440×1000,
+ * заголовок карты на y≈1302) показала 34 разных кадра у smooth и 1 у auto/reduce.
+ */
+async function waitForScrollIdle(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let lastY = window.scrollY;
+        let idleFrames = 0;
+        let frame = 0;
+        function tick(): void {
+          frame += 1;
+          const y = window.scrollY;
+          if (y === lastY) {
+            idleFrames += 1;
+          } else {
+            idleFrames = 0;
+            lastY = y;
+          }
+          if (idleFrames >= 10 || frame >= 300) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      }),
+  );
+}
+
+/** Начинает писать каждое значение window.scrollY (событие scroll) в массив на window. */
+async function recordScroll(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __dnScroll: number[] }).__dnScroll = [];
+    window.addEventListener('scroll', () => {
+      (window as unknown as { __dnScroll: number[] }).__dnScroll.push(window.scrollY);
+    });
+  });
+}
+
+/** Значения scrollY, записанные recordScroll с момента вызова. */
+async function scrollPositions(page: Page): Promise<number[]> {
+  return page.evaluate(() => (window as unknown as { __dnScroll: number[] }).__dnScroll);
+}
+
 test.describe('P1 — 1440×1000: секция «Карта процесса» и встроенная карта (SPEC §4.6, §4.9:354)', () => {
   test('«Показать на карте», смена шага, «нет узла», «Открыть в новой вкладке», перезагрузка', async ({
     page,
@@ -117,6 +165,10 @@ test.describe('P1 — 1440×1000: секция «Карта процесса» �
     await showButton.click();
     const hideButton = article.getByRole('button', { name: ru.processMap.hide });
     await expect(hideButton).toHaveAttribute('aria-expanded', 'true');
+    // DN-us0 (SPEC §4.6:311): клик запускает плавную прокрутку к заголовку
+    // встроенной карты — ждём её конца, иначе boundingBox в шаге 5 снимается
+    // в произвольный момент анимации и допуск в 1px становится нестабильным.
+    await waitForScrollIdle(page);
 
     // 4. iframe: src, loading, referrerpolicy.
     const iframe = page.getByTitle(ru.processMap.iframeTitle);
@@ -224,6 +276,117 @@ test.describe('P2 — 1024×768: рамка карты прокручивает�
       clientWidth: document.documentElement.clientWidth,
     }));
     expect(docMetrics.scrollWidth).toBe(docMetrics.clientWidth);
+
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('P3 — 1440×1000: прокрутка к встроенной карте (SPEC §4.6:311; DN-us0)', () => {
+  test('E1: «Показать на карте» плавно прокручивает страницу к заголовку встроенной карты', async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await stubProcessMap(page);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await openShared(page);
+
+    const scheme = page.getByRole('region', { name: ru.scheme.title });
+    const article = page.getByRole('article');
+    await scheme.locator('[data-step-id="1.10"]').click();
+    await expect(page.getByRole('heading', { level: 1, name: title('1.10') })).toBeVisible();
+
+    const scrollYBefore = await page.evaluate(() => window.scrollY);
+    expect(scrollYBefore).toBe(0);
+    await recordScroll(page);
+
+    await article.getByRole('button', { name: ru.processMap.show }).click();
+
+    // Заголовок встроенной карты (SPEC §4.6:307) целиком в видимой области —
+    // без реализации DN-us0 он остаётся на y≈1302, тест красный.
+    const mapHeading = page.getByRole('heading', { name: ru.processMap.embedTitle });
+    await expect(mapHeading).toBeInViewport({ ratio: 1 });
+
+    await waitForScrollIdle(page);
+    const scrollYAfter = await page.evaluate(() => window.scrollY);
+    expect(scrollYAfter).toBeGreaterThan(scrollYBefore);
+
+    // Плавная прокрутка проходит через несколько разных положений (проба:
+    // 34 кадра у smooth против 1 у auto/reduce, см. waitForScrollIdle выше).
+    const positions = await scrollPositions(page);
+    expect(new Set(positions).size).toBeGreaterThan(1);
+
+    expect(errors).toEqual([]);
+  });
+
+  test('E2: смена шага при раскрытой карте её не прокручивает (SPEC §4.5:291 и §4.6:311 работают независимо)', async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await stubProcessMap(page);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await openShared(page);
+
+    const scheme = page.getByRole('region', { name: ru.scheme.title });
+    const article = page.getByRole('article');
+    await scheme.locator('[data-step-id="1.10"]').click();
+    await expect(page.getByRole('heading', { level: 1, name: title('1.10') })).toBeVisible();
+    await article.getByRole('button', { name: ru.processMap.show }).click();
+    await waitForScrollIdle(page);
+
+    // Возврат наверх — дальше проверяем, что сама смена шага к карте не тянет.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await waitForScrollIdle(page);
+    const mapHeading = page.getByRole('heading', { name: ru.processMap.embedTitle });
+    await expect(mapHeading).not.toBeInViewport();
+
+    // → на 1.11: шапка карточки видна (значит, и правило §4.5:291 не сработало),
+    // src сменился, scrollY не растёт — карта не прокручивает страницу.
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('heading', { level: 1, name: title('1.11') })).toBeInViewport();
+    const iframe = page.getByTitle(ru.processMap.iframeTitle);
+    await expect(iframe).toHaveAttribute('src', PM_URL_111);
+    await waitForScrollIdle(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    // Схема 3.7 (узел пуст, §4.6:314) — iframe нет; возврат на 1.10 —
+    // секция монтируется заново, а признак «карта раскрыта» не менялся
+    // (DN-us0: значит, это тоже не должно прокручивать страницу).
+    await scheme.locator('[data-step-id="3.7"]').click();
+    await expect(page.getByTitle(ru.processMap.iframeTitle)).toHaveCount(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await waitForScrollIdle(page);
+
+    await scheme.locator('[data-step-id="1.10"]').click();
+    await expect(iframe).toHaveAttribute('src', PM_URL_110);
+    await waitForScrollIdle(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    expect(errors).toEqual([]);
+  });
+
+  test('E3: prefers-reduced-motion: reduce — прокрутка к карте мгновенная', async ({ page }) => {
+    const errors = collectErrors(page);
+    await stubProcessMap(page);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await openShared(page);
+
+    const scheme = page.getByRole('region', { name: ru.scheme.title });
+    const article = page.getByRole('article');
+    await scheme.locator('[data-step-id="1.10"]').click();
+    await expect(page.getByRole('heading', { level: 1, name: title('1.10') })).toBeVisible();
+
+    await recordScroll(page);
+    await article.getByRole('button', { name: ru.processMap.show }).click();
+    await waitForScrollIdle(page);
+
+    const mapHeading = page.getByRole('heading', { name: ru.processMap.embedTitle });
+    await expect(mapHeading).toBeInViewport({ ratio: 1 });
+
+    // Мгновенный прыжок — ровно одно положение scrollY за всё время (проба: 1
+    // против 34 у smooth).
+    const positions = await scrollPositions(page);
+    expect(new Set(positions).size).toBe(1);
 
     expect(errors).toEqual([]);
   });
