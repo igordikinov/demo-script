@@ -11,6 +11,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useAppStore } from './state/context.ts';
 import { useArrowKeys } from './hooks/useArrowKeys.ts';
+import { useStepDeepLink } from './hooks/useStepDeepLink.ts';
 import { StoreProvider } from './state/store.tsx';
 import { Header } from './components/Header/Header.tsx';
 import { ImportModal } from './components/ImportModal/ImportModal.tsx';
@@ -25,6 +26,7 @@ import styles from './App.module.css';
 export function AppShell() {
   const { state, dispatch } = useAppStore();
   useArrowKeys();
+  useStepDeepLink();
   const { toast, modal, scenario } = state;
   const scenarioId = scenario?.id ?? null;
   const shownScenarioId = useRef(scenarioId);

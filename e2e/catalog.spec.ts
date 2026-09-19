@@ -270,7 +270,11 @@ test.describe('C4 — ТК 31 в браузере (SPEC §8:427)', () => {
       .click();
     await expect(page.getByRole('banner')).toContainText('Deployment — демо-сценарий');
 
-    await page.reload();
+    // page.goto('/'), не page.reload(): после DN-16 адрес открытого «моего»
+    // хранит ?scenario=...&step=... (SPEC §4.7:320,325), и reload() снова
+    // открыл бы карточку из адреса вместо каталога с 404 у index.json —
+    // не то, что проверяет этот тест (ТК 31, C4).
+    await page.goto('/');
     await expect(shared.getByText(ru.shared.loadFailed)).toBeVisible();
     await page.unroute('**/scenarios/index.json');
     await retry.click();

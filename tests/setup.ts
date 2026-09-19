@@ -27,6 +27,11 @@ function mql(media: string, matches: boolean): MediaQueryList {
 
 if (typeof window !== 'undefined') {
   beforeEach(() => {
+    // hooks/useStepDeepLink.ts читает адрес один раз при монтировании (SPEC
+    // §4.7:325, DN-16) и правит его через history.replaceState — jsdom не
+    // сбрасывает адрес между тестами одного файла, иначе адрес, оставленный
+    // одним тестом, утёк бы в следующий (например tests/import.test.tsx).
+    window.history.replaceState(null, '', '/');
     vi.stubGlobal(
       'fetch',
       vi.fn(() => new Promise<Response>(() => {})),

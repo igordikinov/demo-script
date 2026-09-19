@@ -1,8 +1,10 @@
 // «Мои»: запись при загрузке и совпадение названий (окно A4′) — SPEC §4.8:341-350,
 // §3.6:203-205. ТК 27 (SPEC §8:423) и ТК 28 (SPEC §8:424), дословно.
 //
-// Адресная часть ТК 27 (?scenario=my-deployment-demo-scenariy&step=1.1) — DN-16,
-// здесь не проверяется: адрес страницы ещё не пишется.
+// Адресная часть ТК 27 (SPEC §8:423: `?scenario=my-deployment-demo&step=1.1`) —
+// hooks/useStepDeepLink.ts (DN-16). Id в примере §8:423 не буквальный: имя
+// фикстуры даёт `my-deployment-demo-scenariy` (SPEC §3.6:203, см. FIX_ID ниже),
+// поэтому адрес ниже проверяется на FIX_ID, а не на пример из SPEC дословно.
 //
 // Эталон содержания сценария — tests/fixtures/deployment-demo.json/.xlsx
 // (CLAUDE.md: не придумывать содержание). Название фикстуры «Deployment —
@@ -272,7 +274,7 @@ describe('duplicate.ts — чистые функции (SPEC §4.8:341, :344)', 
   });
 });
 
-describe('ТК 27 — SPEC §8:423 (без адреса, DN-16)', () => {
+describe('ТК 27 — SPEC §8:423', () => {
   it('загрузка нового файла → первая строка в «Моих», сценарий открыт; повтор с другим названием — id без конфликтов', async () => {
     let capturedDispatch: Dispatch<AppAction> | null = null;
     renderApp({
@@ -295,6 +297,9 @@ describe('ТК 27 — SPEC §8:423 (без адреса, DN-16)', () => {
     expect(probe.stepId).toBe('1.1');
     expect(probe.toast).toBe(ru.importModal.added(29));
     expect(probe.library.map((item) => item.id)).toEqual([FIX_ID]);
+    // Адресная часть ТК 27 (SPEC §8:423, §4.8:350): открытие после «Добавить»
+    // ставит ?scenario=<id>&step=<первый>.
+    expect(window.location.search).toBe(`?scenario=${FIX_ID}&step=1.1`);
 
     const stored = readStoredLibrary();
     expect(stored.items.map((item) => item.id)).toEqual([FIX_ID]);
@@ -306,6 +311,8 @@ describe('ТК 27 — SPEC §8:423 (без адреса, DN-16)', () => {
       capturedDispatch?.({ type: 'closeScenario' });
     });
     expect(rowIds(localSection())[0]).toBe(FIX_ID);
+    // «‹ Сценарии» убирает scenario и step из адреса (SPEC §4.7:323).
+    expect(window.location.search).toBe('');
 
     // Повтор: файл без листа «_Сценарий» → название = имя файла, слаг тот же,
     // что у FIX_ID (SPEC §3.1:100, §3.6:203) — id получает суффикс -2.
@@ -320,6 +327,8 @@ describe('ТК 27 — SPEC §8:423 (без адреса, DN-16)', () => {
     expect(probe2.scenarioId).toBe(`${FIX_ID}-2`);
     expect(probe2.toast).toBe(ru.importModal.added(2));
     expect(probe2.library.map((item) => item.id)).toEqual([`${FIX_ID}-2`, FIX_ID]);
+    // Второй файл получает id без конфликтов (§3.6:203) — тот же id в адресе.
+    expect(window.location.search).toBe(`?scenario=${FIX_ID}-2&step=1.1`);
   });
 });
 
