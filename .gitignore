@@ -13,3 +13,6 @@ public/scenarios/
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Локальные копии определений агентов для Codex (.claude/agents — в репозитории)
+.codex/
