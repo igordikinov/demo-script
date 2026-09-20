@@ -277,7 +277,7 @@ describe('App: раскладка и переходы экрана сценар�
     return JSON.parse(screen.getByTestId('state-probe').textContent ?? '{}') as ProbeSnapshot;
   }
 
-  it('прокрутка: открытие и возврат в каталог начинаются с верха страницы, раньше scrollIntoView схемы (SPEC §4.1:241, §4.10:358)', () => {
+  it('прокрутка: открытие и возврат в каталог начинаются с верха страницы; полоса схемы scrollIntoView не вызывает (SPEC §4.1:241, §4.3:267, §4.10:358, DN-91e)', () => {
     seedLibrary([mine]);
     render(
       <StoreProvider>
@@ -298,24 +298,21 @@ describe('App: раскладка и переходы экрана сценар�
     expect(scrollToSpy).toHaveBeenCalledTimes(1);
     expect(scrollToSpy).toHaveBeenLastCalledWith(0, 0);
 
-    // Заглушка scrollIntoView — из tests/setup.ts. Сброс окна обязан идти
-    // первым: иначе scrollIntoView({block:'nearest'}) активного шага уже
-    // отработал бы от прокрутки каталога и увёл шапку за край окна.
+    // DN-91e (§4.3:267): полоса схемы прокручивает только себя по горизонтали
+    // (scrollLeft контейнера) — scrollIntoView она не вызывает вовсе, значит
+    // сбросу окна (§4.10:358) больше нечего опережать.
     const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
-    const [firstScrollIntoView] = scrollIntoView.mock.invocationCallOrder;
-    const [firstScrollTo] = scrollToSpy.mock.invocationCallOrder;
-    if (firstScrollIntoView === undefined || firstScrollTo === undefined) {
-      throw new Error('нет вызова scrollIntoView или scrollTo');
-    }
-    expect(firstScrollTo).toBeLessThan(firstScrollIntoView);
+    expect(scrollIntoView).not.toHaveBeenCalled();
 
-    // Переход к другому шагу — не смена экрана: окно не сбрасывается.
+    // Переход к другому шагу — не смена экрана: окно не сбрасывается, и клик
+    // по самой полосе тоже не вызывает scrollIntoView.
     const step110 = document.querySelector('[data-step-id="1.10"]');
     if (step110 === null) {
       throw new Error('в схеме нет шага 1.10');
     }
     fireEvent.click(step110);
     expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
     expect(screen.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeInTheDocument();

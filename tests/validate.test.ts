@@ -352,6 +352,36 @@ describe('W04/I03 (SPEC §3.5:193): карта mrp берёт снимок MRP, 
   });
 });
 
+describe('DN-h24 (SPEC §3.3:138): E07/W01/W02 и summary.withLink считаются по обрезанному адресу ссылки', () => {
+  it('пробелы вокруг http:// цели — W01 по обрезанному адресу, а не E07 по адресу с пробелами', async () => {
+    const result = await read([
+      { name: 'S', rows: [HL, ['1', 'a', { text: 'Открыть', link: '  http://x  ' }]] },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe('http://x');
+    expect(withoutInfo(result.report)).toEqual([
+      { level: 'warning', code: 'W01', sheet: 'S', row: 2, message: ru.report.codes.W01() },
+    ]);
+  });
+
+  it('пробелы вокруг https:// цели — ни E07, ни W01, ни W02; withLink считает шаг', async () => {
+    const result = await read([
+      { name: 'S', rows: [HL, ['1', 'a', { text: 'Открыть', link: ' https://x ' }]] },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe('https://x');
+    expect(withoutInfo(result.report)).toEqual([]);
+    expect(result.summary.withLink).toBe(1);
+  });
+
+  it('цель из одних пробелов при непустом тексте — E07 по тексту ячейки, а не по пробелам цели', async () => {
+    const result = await read([
+      { name: 'S', rows: [HL, ['1', 'a', { text: 'экран', link: '   ' }]] },
+    ]);
+    expect(withoutInfo(result.report)).toEqual([
+      { level: 'danger', code: 'E07', sheet: 'S', row: 2, message: ru.report.codes.E07('экран') },
+    ]);
+  });
+});
+
 describe('Сортировка отчёта на книге (SPEC §3.5:195): уровень → порядок листов → строка', () => {
   it('коды E03, W03, W05 (read.ts) и E04, E06, E07, W01, W02 (validate.ts) сортируются вместе', async () => {
     const result = await read([

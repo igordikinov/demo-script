@@ -541,7 +541,7 @@ describe('Catalog: открытие сценария (SPEC §4.2:254)', () => {
     expect(fetchFn).toHaveBeenCalledWith('./scenarios/deployment-demo.json');
   });
 
-  it('общий отдаёт 404 → scenarioId остаётся null, тост loadFailed', async () => {
+  it('общий отдаёт 404 → scenarioId остаётся null, тост «Не удалось открыть сценарий „{title}“» (SPEC §4.2:252, DN-51k)', async () => {
     const fetchFn = vi.fn<FetchFn>(async (url) =>
       url === './scenarios/index.json'
         ? jsonResponse({ schema: 1, builtAt: '', items: [S_DEPLOY] })
@@ -553,8 +553,15 @@ describe('Catalog: открытие сценария (SPEC §4.2:254)', () => {
 
     fireEvent.click(within(shared).getByRole('button', { name: deploymentScenario.title }));
 
-    await waitFor(() => expect(probeState().toast).toBe(ru.shared.loadFailed));
+    // Решение владельца 20.09.2026 (bd DN-51k): сбой открытия одной строки
+    // «Общих» получает свой тост с названием строки индекса — не общий текст
+    // ru.shared.loadFailed, который остаётся за состоянием всего раздела
+    // (см. describe «ТК 31» выше, где загрузка индекса, а не строки, падает).
+    await waitFor(() =>
+      expect(probeState().toast).toBe(ru.catalog.openFailed(deploymentScenario.title)),
+    );
     expect(probeState().scenarioId).toBeNull();
+    expect(within(shared).queryByText(ru.shared.loadFailed)).not.toBeInTheDocument();
   });
 
   it('кнопка строки — BUTTON type="button" (Enter по нативной кнопке проверяется в e2e)', () => {

@@ -335,7 +335,7 @@ describe('Клавиши ← → (SPEC §4.5:290)', () => {
 });
 
 describe('Прокрутка к карточке при смене шага (SPEC §4.5:291)', () => {
-  it('16: шапка видна — scrollIntoView карточки не вызывается; схема прокручивает 2.1 (§4.3:267)', () => {
+  it('16: шапка видна — scrollIntoView карточки не вызывается; полоса схемы scrollIntoView у шага 2.1 тоже не вызывает (SPEC §4.3:267, DN-91e)', () => {
     renderApp(openAt('1.11'));
     const article = screen.getByRole('article');
     stubHeaderRect(cardHeaderOf(article), 100, 171);
@@ -346,14 +346,17 @@ describe('Прокрутка к карточке при смене шага (SPE
     if (activeStepButton === null) {
       throw new Error('в схеме нет шага 2.1');
     }
-    expect(scrollCallsOn(activeStepButton).length).toBeGreaterThan(0);
+    // DN-91e (§4.3:267): полоса схемы прокручивает только себя по горизонтали
+    // (scrollLeft контейнера) — scrollIntoView у кнопки активного шага больше
+    // не вызывается вовсе (ловит мутацию «полоса снова зовёт scrollIntoView»).
+    expect(scrollCallsOn(activeStepButton)).toHaveLength(0);
   });
 
   it.each([
     ['выше края', -80, -9],
     ['ниже края', window.innerHeight - 30, window.innerHeight + 41],
   ] as const)(
-    '17: шапка %s — карточка прокручивается ({block:"start"}) после схемы',
+    '17: шапка %s — карточка прокручивается ({block:"start"}); полоса схемы scrollIntoView не вызывает (SPEC §4.5:291, §4.3:267)',
     (_label, top, bottom) => {
       renderApp(openAt('1.11'));
       const article = screen.getByRole('article');
@@ -365,18 +368,14 @@ describe('Прокрутка к карточке при смене шага (SPE
       expect(cardCalls).toHaveLength(1);
       expect(cardCalls[0]?.arg).toEqual({ block: 'start' });
 
+      // DN-91e (§4.3:267): полоса схемы больше не вызывает scrollIntoView —
+      // у активного шага таких вызовов нет вовсе (порядок «схема раньше
+      // карточки» из SPEC 1.5 больше не проверяется — вызова схемы нет).
       const activeStepButton = document.querySelector('[data-step-id="2.1"]');
       if (activeStepButton === null) {
         throw new Error('в схеме нет шага 2.1');
       }
-      const schemeCalls = scrollCallsOn(activeStepButton);
-      expect(schemeCalls.length).toBeGreaterThan(0);
-      const lastSchemeCall = schemeCalls[schemeCalls.length - 1];
-      const cardCall = cardCalls[0];
-      if (lastSchemeCall === undefined || cardCall === undefined) {
-        throw new Error('нет вызова scrollIntoView у схемы или карточки');
-      }
-      expect(cardCall.order).toBeGreaterThan(lastSchemeCall.order);
+      expect(scrollCallsOn(activeStepButton)).toHaveLength(0);
     },
   );
 

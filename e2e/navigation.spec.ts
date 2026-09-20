@@ -192,6 +192,51 @@ test.describe('N3b — 1024×600: шапка карточки ниже края,
   });
 });
 
+test.describe('N4 — 1024×768, страница прокручена вниз: полоса схемы не двигает окно по вертикали (SPEC §4.3:267, DN-91e)', () => {
+  test('шапка карточки видна, но полоса схемы ушла из видимой области — › не прокручивает окно', async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await openShared(page);
+
+    // 1.11 — последний шаг блока 1 (v2:43-90: блоки колонками, шаги — списком
+    // внутри колонки), активируем его: после › (переход на 2.1, первый шаг
+    // блока 2) активный шаг схемы оказывается у самого верха полосы — так на
+    // 1024×768 воспроизводится баг DN-91e (scrollY «прыгал» на несколько
+    // сотен px даже при видимой шапке карточки).
+    const scheme = page.getByRole('region', { name: ru.scheme.title });
+    await scheme.locator('[data-step-id="1.11"]').click();
+    await expect(page.getByRole('heading', { level: 1, name: title('1.11') })).toBeVisible();
+
+    // Прокручиваем страницу так, чтобы полоса схемы целиком ушла из видимой
+    // области, а шапка карточки осталась видна целиком (§4.5:291 не требует
+    // прокрутки — сама карточка её не запрашивает).
+    const schemeBox = await scheme.boundingBox();
+    if (schemeBox === null) {
+      throw new Error('нет boundingBox у схемы');
+    }
+    await page.evaluate(
+      (y) => window.scrollTo(0, y),
+      Math.ceil(schemeBox.y + schemeBox.height + 5),
+    );
+    const header = page.getByRole('article').locator('header');
+    await expect(header).toBeInViewport({ ratio: 1 });
+    const scrollYBefore = await page.evaluate(() => window.scrollY);
+
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('heading', { level: 1, name: title('2.1') })).toBeVisible();
+
+    // DN-91e: полоса схемы прокручивает только себя по горизонтали — окно
+    // остаётся на месте, даже когда сама полоса не видна на экране.
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollYBefore);
+    await expect(header).toBeInViewport({ ratio: 1 });
+    await expect(scheme.locator('[data-step-id="2.1"]')).toHaveAttribute('aria-current', 'step');
+
+    expect(errors).toEqual([]);
+  });
+});
+
 test.describe('N3c — 1024×480: шапка карточки выше края — итог прокрутки схемы (§4.3:267) и карточки (§4.5:291)', () => {
   test('клик по шагу 1.10 в схеме и прокрутка вниз уводят шапку карточки за верхний край; после → шапка снова видна целиком', async ({
     page,

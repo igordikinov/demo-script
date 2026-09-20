@@ -625,6 +625,132 @@ describe('SPEC §3.5:180: пустой «Шаг» в непустой строк
   });
 });
 
+describe('DN-h24 (SPEC §3.3:138): цель гиперссылки обрезается по краям, как текст ячейки', () => {
+  it('пробелы по краям цели — url без пробелов, E07 не выдаётся', async () => {
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link: ' https://stand.example/x ' }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe('https://stand.example/x');
+    expect(withoutInfo(result.report)).toEqual([]);
+    expect(result.summary.withLink).toBe(1);
+  });
+
+  it.each([
+    ['несколько пробелов по краям', '   https://stand.example/x   '],
+    ['таб и перенос строки по краям', '\thttps://stand.example/x\n'],
+    [
+      'NBSP по краям (не путать с байтом-продолжением UTF-8, ниже отдельный тест)',
+      ' https://stand.example/x ',
+    ],
+  ] as const)('%s тоже обрезаются', async (_label, link) => {
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe('https://stand.example/x');
+  });
+
+  it('внутренние пробелы цели не трогаются', async () => {
+    const link = 'https://stand.example/a b';
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe(link);
+  });
+
+  it('цель из одних пробелов при непустом тексте ячейки — откат на текст, E07 по тексту (§3.5:183)', async () => {
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link: '   ' }],
+        ],
+      },
+    ]);
+    // E07 — danger (§3.5:183), поэтому по §3.3:141 result.scenario не собирается вовсе
+    // (read.ts:335); откат на текст ячейки виден только через сообщение отчёта ниже,
+    // которое подставляет именно текст «Открыть», а не пустую/пробельную цель ссылки.
+    expect(result.scenario).toBeUndefined();
+    expect(withoutInfo(result.report)).toEqual([
+      {
+        level: 'danger',
+        code: 'E07',
+        sheet: 'Блок 1',
+        row: 2,
+        message: ru.report.codes.E07('Открыть'),
+      },
+    ]);
+  });
+
+  it('цель из одних пробелов при пустом тексте ячейки — W02 (не «молча пропущенная» строка, §3.3:139)', async () => {
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Действие', 'Ссылка'],
+          ['1.1', 'A', 'act', { text: '', link: '  ' }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]).toMatchObject({
+      id: '1.1',
+      title: 'A',
+      action: 'act',
+      url: '',
+    });
+    expect(withoutInfo(result.report)).toEqual([
+      { level: 'warning', code: 'W02', sheet: 'Блок 1', row: 2, message: ru.report.codes.W02() },
+    ]);
+  });
+
+  it('обрезка строго после recoverUtf8: адрес, оканчивающийся кириллической «Р», не искажается (DN-13n)', async () => {
+    // Последний байт UTF-8 у «Р» (U+0420) — 0xA0, которое latin1-мojibake
+    // превращает в NBSP (U+00A0) — символ, который trim() считает пробельным.
+    // Если бы обрезка шла раньше recoverUtf8, NBSP срезался бы до слияния байт,
+    // и «Р» необратимо ломалась бы (проверено напрямую в recoverUtf8 ниже).
+    const link = 'https://stand.example/Р';
+    const result = await read([
+      {
+        name: 'Блок 1',
+        rows: [
+          ['№ шага', 'Шаг', 'Ссылка'],
+          ['1.1', 'A', { text: 'Открыть', link }],
+        ],
+      },
+    ]);
+    expect(result.scenario?.blocks[0]?.steps[0]?.url).toBe(link);
+  });
+
+  it('обрезка до recoverUtf8 сломала бы кириллицу на краю адреса (прямой вызов recoverUtf8, мутация «убрать trim после recoverUtf8»)', () => {
+    // Мojibake-байты «Р» (D0 A0), поштучно прочитанные как latin1: 'Ð' + NBSP.
+    const mojibake = 'https://stand.example/' + String.fromCharCode(0xd0, 0xa0);
+    // Правильный порядок: recoverUtf8 сначала — байты ещё целы, «Р» восстанавливается,
+    // а trim() после него уже ничего не отрезает (пробельного символа не осталось).
+    expect(recoverUtf8(mojibake).trim()).toBe('https://stand.example/Р');
+    // Обратный порядок ломает вторую половину пары байт: TextDecoder с { fatal: true }
+    // бросает на одиночном 0xD0 без продолжения, recoverUtf8 отдаёт строку как есть.
+    expect(recoverUtf8(mojibake.trim())).toBe('https://stand.example/Ð');
+  });
+});
+
 describe('LEVELS (SPEC §3.5): уровни кодов совпадают с таблицей SPEC.md', () => {
   it('LEVELS содержит те же 15 кодов с теми же уровнями', () => {
     const specPath = fileURLToPath(new URL('../SPEC.md', import.meta.url));

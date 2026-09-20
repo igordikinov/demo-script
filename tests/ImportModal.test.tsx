@@ -478,6 +478,46 @@ describe('ТК 19 (SPEC §8:415, дословно)', () => {
   });
 });
 
+describe('DN-2je (SPEC §4.8:339): при danger таблицы «Лист · Шагов» нет, сводка и отчёт видны', () => {
+  it('файл с E04 — columnheader «Шагов» таблицы листов отсутствует, сводка и строки отчёта на месте', async () => {
+    renderApp();
+    const dialog = await openImportDialog();
+    selectFile(dialog, await bookFile(E04_SHEETS, 'bad.xlsx'));
+    await within(dialog).findByText(ru.importModal.fixErrors);
+
+    // Решение владельца 20.09.2026 (bd DN-2je): при danger сценарий не собран
+    // (readWorkbook блоков не отдаёт), поэтому таблицы «Лист · Шагов» нет —
+    // остаются только сводка §3.3 и таблица отчёта. «Шагов» — колонка только
+    // таблицы листов (у таблицы отчёта тоже есть «Лист», но не «Шагов»).
+    expect(
+      within(dialog).queryByRole('columnheader', { name: ru.importModal.sheetColumns.steps }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByText(ru.summary.text({ sheets: 1, blocks: 1, steps: 2, withLink: 2 })),
+    ).toBeInTheDocument();
+    const rows = bodyRows(reportTableOf(dialog));
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it('лист, пропущенный по W05, виден в отчёте, а не в таблице листов (которой при danger нет)', async () => {
+    const sheets: SheetSpec[] = [
+      { name: 'Пустой', rows: [['№ шага', 'Шаг', 'Лишняя']], textRanges: ['A2:A500'] },
+      ...E04_SHEETS,
+    ];
+    renderApp();
+    const dialog = await openImportDialog();
+    selectFile(dialog, await bookFile(sheets, 'bad2.xlsx'));
+    await within(dialog).findByText(ru.importModal.fixErrors);
+
+    expect(
+      within(dialog).queryByRole('columnheader', { name: ru.importModal.sheetColumns.steps }),
+    ).not.toBeInTheDocument();
+    const reportText = reportTableOf(dialog).textContent ?? '';
+    expect(reportText).toContain(ru.report.codes.W05());
+    expect(reportText).toContain('Пустой');
+  });
+});
+
 describe('Книга только с предупреждением (SPEC §4.8:331 — «Файл проверен без ошибок»)', () => {
   it('описание зоны checkedOk (не reselectHint), primary активна, fixErrors нет', async () => {
     renderApp();

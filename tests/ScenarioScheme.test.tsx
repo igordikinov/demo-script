@@ -2,7 +2,10 @@
 // раздел 1: `section[aria-labelledby]` + `h2` (имя = ru.scheme.title), сводка
 // ru.scheme.summary, блоки с шапкой (номер/название/«{k} шагов»), список шагов
 // — кнопка на всю ширину колонки с точкой, номером, заголовком и иконкой
-// ссылки. Клик — selectStep, активный шаг скроллится в видимую область.
+// ссылки. Клик — selectStep; полоса прокручивает саму себя по горизонтали до
+// активного шага (`scrollLeft` контейнера `[data-scheme-row]`), страницу по
+// вертикали не двигает — это делает только правило карточки §4.5:291 (решение
+// владельца DN-91e, SPEC 1.6 §11 №20; было — `scrollIntoView` на кнопке шага).
 //
 // Эталон содержания — tests/fixtures/deployment-demo.json (CLAUDE.md: не
 // придумывать содержание сценария): 3 блока по [11, 11, 7] шагов, всего 29;
@@ -293,19 +296,119 @@ describe('ScenarioScheme: скрытая подпись ссылки (SPEC §4.3
   });
 });
 
-describe('ScenarioScheme: прокрутка активного шага (SPEC §4.3:265 — scrollIntoView)', () => {
-  it('клик по шагу вызывает scrollIntoView({block:"nearest", inline:"nearest"}) ровно один раз на кнопке шага', () => {
-    renderScheme('1.10');
-    scrollIntoView.mockClear();
+describe('ScenarioScheme: полоса прокручивает себя по горизонтали (SPEC §4.3:267, DN-91e)', () => {
+  // Решение владельца 20.09.2026 (bd DN-91e): полоса двигает только
+  // `scrollLeft` своего контейнера ([data-scheme-row], хук для теста — класс
+  // CSS-модуля захэширован); scrollIntoView она не вызывает вовсе — вертикальную
+  // прокрутку страницы делает только правило карточки §4.5:291.
+  //
+  // getBoundingClientRect подменяется через vi.spyOn — без restoreAllMocks
+  // подмена утекла бы в describe «без сценария» ниже.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
+  function rect(left: number, right: number): DOMRect {
+    return {
+      top: 0,
+      bottom: 0,
+      left,
+      right,
+      width: right - left,
+      height: 0,
+      x: left,
+      y: 0,
+      toJSON() {
+        return {};
+      },
+    };
+  }
+
+  /**
+   * Контейнеру полосы ([data-scheme-row]) — прямоугольник `view`, кнопке
+   * активного шага (по `this.closest('[data-step-id]')`) — прямоугольник из
+   * `steps` по её id, остальным — нулевой (как сейчас в jsdom).
+   */
+  function stubStripRects(
+    view: readonly [number, number],
+    steps: Readonly<Record<string, readonly [number, number]>>,
+  ): void {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: Element,
+    ): DOMRect {
+      if (this.matches('[data-scheme-row]')) {
+        return rect(...view);
+      }
+      const stepId = this.closest('[data-step-id]')?.getAttribute('data-step-id');
+      const found = stepId !== undefined && stepId !== null ? steps[stepId] : undefined;
+      return found ? rect(...found) : rect(0, 0);
+    });
+  }
+
+  function stripRowOf(container: HTMLElement): HTMLElement {
+    const row = container.querySelector('[data-scheme-row]');
+    if (row === null) {
+      throw new Error('в схеме нет контейнера полосы [data-scheme-row]');
+    }
+    return row as HTMLElement;
+  }
+
+  function clickStep25(): void {
     const target = screen.getByRole('button', {
       name: (_accessibleName, element) => element.getAttribute('data-step-id') === '2.5',
     });
     fireEvent.click(target);
+  }
 
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
-    expect(scrollIntoView.mock.contexts.at(-1)).toBe(target);
+  it('шаг выступает за правый край полосы — scrollLeft увеличивается ровно на величину выступа', () => {
+    const { container } = renderScheme('1.10');
+    const row = stripRowOf(container);
+    row.scrollLeft = 50;
+    // Полоса 0..300, кнопка 2.5 — 280..340: выступ справа 40.
+    stubStripRects([0, 300], { '2.5': [280, 340] });
+
+    clickStep25();
+
+    expect(row.scrollLeft).toBe(50 + 40);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('шаг выступает за левый край полосы — scrollLeft уменьшается ровно на величину выступа', () => {
+    const { container } = renderScheme('1.10');
+    const row = stripRowOf(container);
+    row.scrollLeft = 50;
+    // Полоса 0..300, кнопка 2.5 — −40..20: выступ слева −40.
+    stubStripRects([0, 300], { '2.5': [-40, 20] });
+
+    clickStep25();
+
+    expect(row.scrollLeft).toBe(50 - 40);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('шаг виден целиком — scrollLeft не меняется (иначе мутация «всегда доводить до края» не поймана)', () => {
+    const { container } = renderScheme('1.10');
+    const row = stripRowOf(container);
+    row.scrollLeft = 50;
+    // Полоса 0..300, кнопка 2.5 — 20..280: целиком внутри, оба зазора не сработали.
+    stubStripRects([0, 300], { '2.5': [20, 280] });
+
+    clickStep25();
+
+    expect(row.scrollLeft).toBe(50);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('повторный клик по уже активному шагу не меняет scrollLeft — deps эффекта не изменились', () => {
+    const { container } = renderScheme('2.5');
+    const row = stripRowOf(container);
+    row.scrollLeft = 50;
+    stubStripRects([0, 300], { '2.5': [280, 340] });
+
+    clickStep25();
+
+    expect(row.scrollLeft).toBe(50);
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });
 

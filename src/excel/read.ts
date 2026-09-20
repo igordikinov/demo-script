@@ -122,12 +122,21 @@ export function recoverUtf8(target: string): string {
 }
 
 /**
- * Цель гиперссылки ячейки (§3.3:138) — без trim и percent-декодирования, единственное
- * место чтения `l.Target`. Правится только кодировка (см. recoverUtf8, DN-13n).
+ * Цель гиперссылки ячейки (§3.3:138) — единственное место чтения `l.Target`. Правится
+ * кодировка (см. recoverUtf8, DN-13n) и обрезаются края, как у текста ячейки (DN-h24);
+ * percent-декодирования нет. Пустая после обрезки цель — как отсутствие ссылки:
+ * вызывающий сам откатится на текст ячейки (`linkTarget(cell) ?? cellText(cell)`).
  */
 function linkTarget(cell: CellObject | undefined): string | undefined {
   const target = cell?.l?.Target;
-  return target === undefined ? undefined : recoverUtf8(target);
+  if (target === undefined) {
+    return undefined;
+  }
+  // recoverUtf8 строго раньше trim: trim() считает пробельным U+00A0, а это байт-
+  // продолжение UTF-8 (у «Р» пара байт — D0 A0), поэтому обрезка раньше восстановления
+  // кодировки рвёт кириллицу на краю адреса (§3.3:138, DN-13n, DN-h24).
+  const trimmed = recoverUtf8(target).trim();
+  return trimmed === '' ? undefined : trimmed;
 }
 
 /** Имя файла без последнего расширения; у «.xlsx» точка в начале — имя остаётся целиком. */

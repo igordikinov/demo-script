@@ -146,6 +146,18 @@ describe('ru: подписи DN-lur дословно из SPEC.md', () => {
   });
 });
 
+describe('ru.catalog.openFailed (SPEC §4.2:252, DN-51k): дословно из SPEC.md', () => {
+  // «{title}» в SPEC.md — буквальный плейсхолдер (как в §4.2:253 у deleteDialog.body),
+  // не подставленное значение — специально не захватываем его в группу.
+  const OPEN_FAILED =
+    /сбой загрузки файла общего сценария при открытии строки — тост «Не удалось открыть сценарий „\{title\}“» \(`\{title\}` — из строки индекса\)\./; // :252
+
+  it('текст тоста после подстановки {title} совпадает с шаблоном SPEC.md', () => {
+    specMatchOnce(OPEN_FAILED);
+    expect(ru.catalog.openFailed('Демо')).toBe('Не удалось открыть сценарий „Демо“');
+  });
+});
+
 describe('ru: формулы с числами', () => {
   it('summary.text (SPEC §3.3:143)', () => {
     expect(ru.summary.text({ sheets: 3, blocks: 3, steps: 29, withLink: 24 })).toBe(

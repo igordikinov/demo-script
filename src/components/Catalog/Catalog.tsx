@@ -15,9 +15,10 @@
 //   шаги и «со ссылкой» по isScreenUrl считаются по сценарию.
 //
 // Открытие на первом шаге (§4.2:254): «мой» — сразу из стора, общий — командой
-// openShared (файл через кэш, §3.7:230). Не загрузился общий — тост с текстом
-// ошибки «Общих»: отдельного текста в SPEC нет. Адрес страницы — DN-16, окно
-// удаления A5.2 — DN-25: корзина только открывает его (openDelete).
+// openShared (файл через кэш, §3.7:230). Не загрузился общий — тост
+// ru.catalog.openFailed с названием сценария (§4.2:252, DN-51k); текст
+// ru.shared.loadFailed остаётся за состоянием всего раздела. Адрес страницы —
+// DN-16, окно удаления A5.2 — DN-25: корзина только открывает его (openDelete).
 import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ru } from '../../i18n/ru.ts';
@@ -59,9 +60,12 @@ export function Catalog({ now = defaultNow }: CatalogProps) {
   };
 
   const openShared = (id: string) => {
+    // Название берётся из строки индекса до ожидания промиса: к ответу список мог
+    // перезагрузиться. Нет строки — в тосте id (§4.2:252, DN-51k).
+    const title = shared.items.find((item) => item.id === id)?.title ?? id;
     void commands.openShared(id).then((opened) => {
       if (!opened) {
-        dispatch({ type: 'showToast', message: ru.shared.loadFailed });
+        dispatch({ type: 'showToast', message: ru.catalog.openFailed(title) });
       }
     });
   };
