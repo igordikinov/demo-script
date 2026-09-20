@@ -429,8 +429,7 @@ describe('sortReport (SPEC §3.5:195): уровень → порядок лис�
       reportRow('E04', 'A', 3, 'E04'),
       reportRow('W03', 'Z', 7, 'W03'),
       // 'Q' не входит в переданный порядок листов ['Z', 'A'] — «неизвестные — в конец»
-      // это выбор sortReport, а не требование SPEC §3.5:195 или плана (см. комментарий
-      // sortReport в src/excel/validate.ts).
+      // теперь прямо задано SPEC §3.5:195 (правка DN-1q5): лист не из sheets — после всех.
       reportRow('W04', 'Q', 5, 'W04'),
     ];
     const before = [...input];

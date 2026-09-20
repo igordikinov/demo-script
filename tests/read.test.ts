@@ -69,8 +69,8 @@ describe('DN-13n (SPEC §3.3:138, ТК 5): цель гиперссылки с к
   // Баг DN-04/DN-13n (история): писатель кладёт в rels корректный UTF-8, а старый
   // linkTarget() отдавал cell.l.Target как есть — SheetJS при чтении rels отдаёт
   // байты UTF-8, каждый поштучно перекодированный так, будто он был latin1
-  // (классическая мojibake). Исправление — recoverUtf8() (src/excel/read.ts:107-122),
-  // которую вызывает linkTarget() (src/excel/read.ts:128-131). Ожидание теста —
+  // (классическая мojibake). Исправление — recoverUtf8() (src/excel/read.ts:126-141),
+  // которую вызывает linkTarget() (src/excel/read.ts:149-159). Ожидание теста —
   // исходный адрес, побайтово равный записанному через writeWorkbook.
   it('кириллица в пути и в query читается как записана', async () => {
     const link = 'https://stand.example/путь?q=узел';
@@ -250,16 +250,81 @@ describe('ТК 6 (SPEC §8:402): строка заголовков и назва
     expect(result.summary).toEqual({ sheets: 2, blocks: 1, steps: 1, withLink: 0, withNode: 0 });
   });
 
-  it('совсем пустой лист без !ref → E03 (план, открытый вопрос 7)', async () => {
+  it('совсем пустой лист (rows: []) → W05, файл всё равно грузится (SPEC §3.5:188, DN-1q5)', async () => {
     const result = await read([
       { name: 'Пусто', rows: [] },
       { name: 'Хороший', rows: [HEAD, ['1', 'x']] },
     ]);
     // 'Хороший' без «Ссылки» даёт W02 на своём единственном шаге (DN-06).
     expect(withoutInfo(result.report).map((r) => [r.code, r.sheet])).toEqual([
-      ['E03', 'Пусто'],
+      ['W05', 'Пусто'],
       ['W02', 'Хороший'],
     ]);
+    // Лист с W05 остаётся в summary.sheets (§3.3:143), а не только среди собранных blocks.
+    expect(result.scenario).toBeDefined();
+    expect(result.summary).toEqual({ sheets: 2, blocks: 1, steps: 1, withLink: 0, withNode: 0 });
+  });
+
+  it('лист с !ref, но без единой ячейки → W05 — так Excel пишет забытый незаполненный лист (SPEC §3.5:188, DN-1q5)', async () => {
+    // Диапазон обязан быть многоячеечным: 'A1:A1' при записи сворачивается в !ref 'A1', а
+    // такой dimension SheetJS 0.20.3 теряет при чтении (dimregex требует двоеточие) — этот
+    // случай уже покрыт кейсом выше (rows: []). Здесь — «лист, где что-то писали и стёрли».
+    const result = await read([
+      { name: 'Пусто', rows: [], textRanges: ['A1:C3'] },
+      { name: 'Хороший', rows: [HEAD, ['1', 'x']] },
+    ]);
+    expect(withoutInfo(result.report).map((r) => [r.code, r.sheet])).toEqual([
+      ['W05', 'Пусто'],
+      ['W02', 'Хороший'],
+    ]);
+  });
+
+  it('ячейка из одних пробелов → W05: ключ ячейки есть, текста нет (ловит мутацию «проверять ключи вместо текста», SPEC §3.5:188, DN-1q5)', async () => {
+    const result = await read([
+      { name: 'Пусто', rows: [['   ']] },
+      { name: 'Хороший', rows: [HEAD, ['1', 'x']] },
+    ]);
+    expect(withoutInfo(result.report).map((r) => [r.code, r.sheet])).toEqual([
+      ['W05', 'Пусто'],
+      ['W02', 'Хороший'],
+    ]);
+  });
+
+  it('лист с текстом, но без строки заголовков в 1–3 → по-прежнему E03, а не W05 (ловит мутацию «все пустые/безголовые листы стали W05», SPEC §3.5:179, DN-1q5)', async () => {
+    const result = await read([
+      { name: 'Плохой', rows: [['x']] },
+      { name: 'Хороший', rows: [HEAD, ['1', 'x']] },
+    ]);
+    expect(withoutInfo(result.report).map((r) => [r.code, r.sheet])).toEqual([
+      ['E03', 'Плохой'],
+      ['W02', 'Хороший'],
+    ]);
+  });
+
+  it('все листы пустые → W05 на каждом плюс E02 (danger) по книге, scenario не возвращается (SPEC §3.5:178, DN-1q5)', async () => {
+    const result = await read([
+      { name: 'Пусто1', rows: [] },
+      { name: 'Пусто2', rows: [] },
+    ]);
+    expect(withoutInfo(result.report)).toEqual([
+      { level: 'danger', code: 'E02', sheet: '', row: null, message: ru.report.codes.E02() },
+      {
+        level: 'warning',
+        code: 'W05',
+        sheet: 'Пусто1',
+        row: null,
+        message: ru.report.codes.W05(),
+      },
+      {
+        level: 'warning',
+        code: 'W05',
+        sheet: 'Пусто2',
+        row: null,
+        message: ru.report.codes.W05(),
+      },
+    ]);
+    expect(result.scenario).toBeUndefined();
+    expect(result.summary).toEqual({ sheets: 2, blocks: 0, steps: 0, withLink: 0, withNode: 0 });
   });
 
   it('заголовки не в колонке A → название блока = имя листа (SPEC §3.2:112)', async () => {
@@ -466,7 +531,7 @@ describe('SPEC §3.3:139: строка пропускается, только е
   });
 });
 
-describe('SPEC §3.5 W05/п.5 плана: пропущенный лист (W05) занимает номер блока', () => {
+describe('SPEC §3.5: пропущенный лист (W05) занимает номер блока (DN-1q5)', () => {
   it('W05 без I01 на пустом листе; следующий блок получает n=2', async () => {
     const result = await read([
       { name: '_Сценарий', rows: [['Название', 'X']] },
@@ -578,7 +643,7 @@ describe('SPEC §3.3:143, план п.11: summary.withLink по isScreenUrl, wit
       },
     ]);
     // scenario не проверяется: ftp://x на строке 4 теперь даёт E07 (danger, DN-06) и
-    // блокирует сценарий, но summary считается независимо от danger (read.ts:318-326).
+    // блокирует сценарий, но summary считается независимо от danger (read.ts:358-365).
     expect(result.summary).toEqual({ sheets: 1, blocks: 1, steps: 4, withLink: 2, withNode: 2 });
   });
 });
@@ -686,7 +751,7 @@ describe('DN-h24 (SPEC §3.3:138): цель гиперссылки обреза�
       },
     ]);
     // E07 — danger (§3.5:183), поэтому по §3.3:141 result.scenario не собирается вовсе
-    // (read.ts:335); откат на текст ячейки виден только через сообщение отчёта ниже,
+    // (read.ts:365); откат на текст ячейки виден только через сообщение отчёта ниже,
     // которое подставляет именно текст «Открыть», а не пустую/пробельную цель ссылки.
     expect(result.scenario).toBeUndefined();
     expect(withoutInfo(result.report)).toEqual([
