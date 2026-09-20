@@ -1,0 +1,177 @@
+name: Проверки и деплой
+
+# Навигатор раздаётся статикой с GitHub Pages по адресу
+# https://igordikinov.github.io/demo-script/ (SPEC §7:380; репозиторий на
+# GitHub называется demo-script — решение владельца 20.09.2026, DN-18).
+# Публикуется только собранный dist/: исходники, макеты design/ и книги
+# scenarios/*.xlsx остаются в репозитории, но сайтом не раздаются.
+# base: './' в vite.config.ts делает пути относительными, поэтому сборка
+# работает из подкаталога Pages и внутри iframe без правок (SPEC §7).
+#
+# ВЕРСИИ ACTIONS. Взяты из process-map/.github/workflows/deploy.yml, где уже
+# подняты под Node 24 раннеров: на v4/v3 предупреждения о снятом с поддержки
+# node20 превратятся в падения. У upload-artifact минимум — v7, у
+# upload-pages-artifact — v5 (её v3 и v4 обе тянут node20).
+#
+# ПОЧЕМУ ОДИН WORKFLOW. Проверки не вынесены отдельно намеренно: два
+# независимых workflow друг о друге не знают, и на push в main деплой уехал бы
+# даже при красном CI. Здесь зависимость выражена прямо —
+# `deploy: needs: [check, e2e, firstpaint]`.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# По умолчанию — минимум. Права на публикацию выданы точечно job'у deploy,
+# чтобы прогоны PR их не получали.
+permissions:
+  contents: read
+
+# Деплой и проверки живут в разных группах. Для деплоя группа статическая и без
+# отмены: начатый доводится до конца, чтобы Pages не остался с полузалитой
+# сборкой. Для PR — своя группа на ветку с отменой устаревших: ждать прогон,
+# результат которого уже неактуален, незачем.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 нужен во ВСЕХ трёх job'ах (SPEC §7:391, §3.7).
+      # scripts/build-scenarios.ts берёт дату сценария из
+      # `git log -1 --format=%cI -- <файл>`; в мелком клоне история обрезана,
+      # и loadedAt молча уехал бы в дату последнего коммита. Скрипт зовут
+      # prebuild (job'ы check и firstpaint) и predev (dev-сервер в job'е e2e).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Версия из .nvmrc (22.14.0): скрипты запускаются как
+      # node --experimental-strip-types, см. engines в package.json.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Сломанная сборка не должна попасть на Pages: сначала проверки.
+      # npm run check это tsc + eslint + vitest + prettier --check. e2e гоняет
+      # соседний job: им нужны браузеры Playwright, и ставить их ради сборки
+      # незачем — job'ы идут параллельно.
+      - run: npm run check
+
+      # Внутри — prebuild → npm run scenarios: битая книга в scenarios/ роняет
+      # проверку здесь, а не у зрителя (SPEC §7:391).
+      - run: npm run build
+
+      # Лимиты бандла: ≤ 350 KB gzip на весь JS и CSS, ≤ 120 KB стартовый набор
+      # без SheetJS (SPEC §8:431). Считается по dist/.vite/manifest.json.
+      - run: npm run size
+
+      # На PR артефакт не нужен: деплоя там не будет, а квота расходуется.
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 — даты общих сценариев: Playwright поднимает npm run dev,
+      # а тот через predev зовёт npm run scenarios с git log (см. job check).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Только chromium: в playwright.config.ts один проект, и он на chromium.
+      # Установка без имени браузера тянула бы ещё firefox и webkit впустую.
+      - run: npx playwright install --with-deps chromium
+
+      # Dev-сервер поднимает сам Playwright (webServer в конфиге) — отдельного
+      # шага здесь быть не должно: в CI reuseExistingServer=false, и на занятом
+      # порту прогон упал бы с «is already used».
+      - run: npm run e2e
+
+      # Без этого от падения в CI осталась бы только текстовая простыня лога:
+      # трейс, снимки и HTML-отчёт пишутся в файлы. if: !cancelled() — отчёт
+      # нужен именно когда прогон красный.
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Первая отрисовка < 1 с (SPEC §8:431) мерится на собранном приложении:
+  # playwright.preview.config.ts поднимает vite preview на dist/, иначе в замер
+  # попал бы dev-сервер с неминифицированным React. Отдельный job, а не шаг в
+  # check: job'ы идут параллельно, и гейт деплоя не удлиняется на установку
+  # браузера.
+  firstpaint:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 — тот же npm run scenarios через prebuild (см. job check).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      # vite preview раздаёт готовый dist/, поэтому сборка идёт до замера.
+      - run: npm run build
+
+      - run: npm run e2e:preview
+
+      # Имя артефакта обязано отличаться от playwright-report job'а e2e: два
+      # артефакта с одним именем в одном прогоне — ошибка upload-artifact.
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-firstpaint
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  deploy:
+    # Сломанное не уезжает на Pages: деплой ждёт все три проверки.
+    needs: [check, e2e, firstpaint]
+    # На PR деплоить нечего и некуда: окружение github-pages защищено правилом
+    # «только ветка по умолчанию», и job всё равно был бы отклонён.
+    if: github.event_name != 'pull_request'
+    # Права на публикацию — только здесь, а не на весь workflow: actions: read
+    # требует deploy-pages начиная с v4.
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

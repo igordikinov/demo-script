@@ -100,7 +100,13 @@ export default defineConfig(
     },
   },
   {
-    files: ['tests/**/*.{ts,tsx}', 'e2e/**/*.{ts,tsx}', 'scripts/**/*.ts', '*.config.{ts,js}'],
+    files: [
+      'tests/**/*.{ts,tsx}',
+      'e2e/**/*.{ts,tsx}',
+      'e2e-preview/**/*.{ts,tsx}',
+      'scripts/**/*.ts',
+      '*.config.{ts,js}',
+    ],
     languageOptions: {
       globals: globals.node,
     },

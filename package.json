@@ -13,6 +13,7 @@
     "check": "tsc --noEmit && eslint . && vitest run && prettier --check .",
     "test": "vitest run",
     "e2e": "playwright test",
+    "e2e:preview": "playwright test --config playwright.preview.config.ts",
     "pm:snapshot": "node --experimental-strip-types scripts/pm-snapshot.ts",
     "fixture": "node --experimental-strip-types scripts/make-fixture.ts",
     "scenarios": "node --experimental-strip-types scripts/build-scenarios.ts"

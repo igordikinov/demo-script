@@ -1,6 +1,6 @@
 # SPEC — Навигатор демо-сценария (In.Plan Demo Navigator)
 
-Версия 1.7 · 20.09.2026 · к PRD.md v1.1 (1.1 — каталог сценариев, общие и мои сценарии: §3.6, §3.7, §4.1, §4.2, §4.7, §4.8, ТК 25–33, DN-22…DN-26; 1.2 — решения владельца по §11; 1.3 — решения DN-opn, DN-3h0 (§3.2, §3.5); 1.4 — решение DN-22 по `builtAt` (§3.7); 1.5 — решение DN-us0 (§4.6); 1.6 — решения DN-91e, DN-2je, DN-h24, DN-jja, DN-51k (§3.3, §4.2, §4.3, §4.8, §6); 1.7 — §3.2, §3.3, §3.5, §8 приведены в соответствие с кодом, решения DN-1q5). При расхождении PRD и SPEC главнее SPEC.
+Версия 1.8 · 20.09.2026 · к PRD.md v1.1 (1.1 — каталог сценариев, общие и мои сценарии: §3.6, §3.7, §4.1, §4.2, §4.7, §4.8, ТК 25–33, DN-22…DN-26; 1.2 — решения владельца по §11; 1.3 — решения DN-opn, DN-3h0 (§3.2, §3.5); 1.4 — решение DN-22 по `builtAt` (§3.7); 1.5 — решение DN-us0 (§4.6); 1.6 — решения DN-91e, DN-2je, DN-h24, DN-jja, DN-51k (§3.3, §4.2, §4.3, §4.8, §6); 1.7 — §3.2, §3.3, §3.5, §8 приведены в соответствие с кодом, решения DN-1q5; 1.8 — CI и деплой (§7), замер первой отрисовки (§8)). При расхождении PRD и SPEC главнее SPEC.
 
 Референс визуала (только чтение): `design/Демо-навигатор v2.dc.html` и снимки `design/v2-card.png`, `design/v2-import.png` — схема, карточка, окно загрузки (Claude Design); `design/catalog-mockup.html`, снимки `design/catalog-mockup.png`, `design/v3-catalog.png` — каталог, шапка открытого сценария, выбор при совпадении названий, удаление (макет нарисован по этой спеке, не в Claude Design).
 
@@ -377,18 +377,18 @@ pmBase: {
 
 Всё — как у process-map (`process-map/README.md`, «Встраивание в In.Plan»):
 
-- адрес `https://igordikinov.github.io/demo-navigator/` — со слэшем на конце;
+- адрес `https://igordikinov.github.io/demo-script/` — со слэшем на конце;
 - `iframe` без `sandbox` или с `allow-scripts allow-same-origin allow-popups allow-downloads` (без `allow-downloads` не скачается шаблон, без `allow-same-origin` не сохранится сценарий);
 - только https.
 
 ```html
-<iframe src="https://igordikinov.github.io/demo-navigator/?scenario=deployment-demo&step=1.1"
+<iframe src="https://igordikinov.github.io/demo-script/?scenario=deployment-demo&step=1.1"
         style="width:100%;height:900px;border:0" loading="lazy"></iframe>
 ```
 
 Навигатор сам встраивает process-map: оба на `igordikinov.github.io`, заголовки GitHub Pages встраивание разрешают.
 
-CI `.github/workflows/pages.yml`: checkout с `fetch-depth: 0` (даты общих сценариев, §3.7); на PR — `npm ci`, `npm run check`, `npm run build` (внутри — `npm run scenarios`, битый файл в `scenarios/` роняет проверку), `npm run size`, `npm run e2e`; на push в `main` — то же и деплой `dist/` на Pages, `deploy: needs: [check, e2e]`. `dist/.vite/manifest.json` попадает в публикацию на Pages — это допустимо. Версии actions — те же, что в process-map (там уже подняты под Node 24).
+CI `.github/workflows/pages.yml`: три job'а `check`, `e2e`, `firstpaint`, у каждого checkout с `fetch-depth: 0` (даты общих сценариев, §3.7 — их берёт `npm run build` через `prebuild` и `npm run dev` через `predev`, то есть все три job'а). `check` — `npm ci`, `npm run check`, `npm run build` (внутри — `npm run scenarios`, битый файл в `scenarios/` роняет проверку), `npm run size`. `e2e` — `npm ci`, `npm run e2e`. `firstpaint` — `npm ci`, `npm run build`, `npm run e2e:preview` (первая отрисовка на собранном `dist/` через `vite preview`, §8). На PR — все три job'а без деплоя; на push в `main` — то же и деплой `dist/` на Pages, `deploy: needs: [check, e2e, firstpaint]`. `dist/.vite/manifest.json` попадает в публикацию на Pages — это допустимо. Версии actions — те же, что в process-map (там уже подняты под Node 24).
 
 ## 8. Тестирование
 
@@ -428,7 +428,7 @@ CI `.github/workflows/pages.yml`: checkout с `fetch-depth: 0` (даты общ�
 | 32 | `setItem` бросает `QuotaExceededError` → тост, список не изменён | `library.test.ts` |
 | 33 | Снимки 1440×900 каталога с данными, A5.1 и окна A4′ — сверка глазами с `design/v3-catalog.png` и `design/catalog-mockup.png` | `e2e/visual.spec.ts` + visual-qa |
 
-Первая отрисовка < 1 с мерится в e2e (Playwright, First Contentful Paint) отдельным шагом CI. Бандл ≤ 350 KB gzip — все `.js`/`.css` в `dist/` (шрифты не входят и выводятся отдельно), проверяется скриптом `scripts/size.ts` шагом `npm run size` после `build` (§7); стартовый набор без SheetJS ≤ 120 KB gzip.
+Первая отрисовка < 1 с мерится отдельным шагом CI (`npm run e2e:preview`, job `firstpaint`, §7): Playwright поднимает `vite preview` на собранном `dist/`, `e2e-preview/firstpaint.spec.ts` берёт медиану трёх загрузок First Contentful Paint. Бандл ≤ 350 KB gzip — все `.js`/`.css` в `dist/` (шрифты не входят и выводятся отдельно), проверяется скриптом `scripts/size.ts` шагом `npm run size` после `build` (§7); стартовый набор без SheetJS ≤ 120 KB gzip.
 
 ## 9. Definition of Done для задачи
 
@@ -637,3 +637,4 @@ bd ready → bd show DN-NN → bd update DN-NN --claim
 | 24 | DN-51k: пустой модуль, тост при сбое открытия общего сценария, шеврон у «Моих» (§4.2:252, §4.2:254) | — | модуль не заполнен → ячейка пустая; сбой открытия общего → тост «Не удалось открыть сценарий „{title}“»; шеврон › только у «Общих», у «Моих» — корзина. Записано в §4.2 |
 | 25 | DN-1q5: пустой лист сейчас даёт E03 (danger, файл не грузится) — оставить так или смягчить (§3.5:179) | — | смягчить до W05 «Лист пустой — пропущен»; если пустые все листы — файл всё равно отклоняется по E02. Записано в §3.5 |
 | 26 | DN-1q5: две колонки одного поля (алиасы, например «Шаг» и «Название шага») — что делать с повтором (§3.2:130) | — | оставить как есть: берётся первая слева, остальные молча игнорируются, I01 на них нет. Записано в §3.2 |
+| 27 | DN-18: репозиторий на GitHub называется `demo-script`, а SPEC §7:380 обещал адрес `demo-navigator` | — | репозиторий не переименовывать, поправить SPEC на `https://igordikinov.github.io/demo-script/`; включение Pages (Settings → Pages → Source = GitHub Actions) владелец делает сам после вливания workflow в `main`, до этого job `deploy` падает ожидаемо. Записано в §7 |
