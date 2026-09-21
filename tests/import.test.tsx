@@ -34,7 +34,6 @@ import {
   numberedFreeTitle,
   titleKey,
 } from '../src/components/ImportModal/duplicate';
-import { appBanner } from './helpers';
 import fixtureJson from './fixtures/deployment-demo.json';
 
 const importMetaUrl = import.meta.url;
@@ -175,11 +174,13 @@ function renderApp(opts: RenderOptions = {}): void {
 }
 
 function uploadButton(): HTMLElement {
-  // Скоуп на шапку A0 (tests/helpers.ts): пустые «Мои» (A5.1) рисуют свою
-  // кнопку с тем же текстом (SPEC §4.2:255), а с открытым сценарием (DN-26)
-  // второй <header> — заголовок StepCard внутри <article> — см.
-  // tests/ImportModal.test.tsx:115-121.
-  return within(appBanner()).getByRole('button', { name: ru.header.upload });
+  // DN-ysk (SPEC §4.2:247, §4.2:257): полосы A0 больше нет. Пока «Мои» пусты
+  // (A5.1), строка заголовка каталога кнопку не рисует — открывает загрузку
+  // только primary-кнопка пунктирного блока EmptyMine (решение владельца
+  // 21.09.2026, bd DN-ysk); как только в «Моих» появляется хоть один
+  // сценарий, эти два места не сосуществуют — ровно один <button> с текстом
+  // ru.catalog.upload виден в любой момент, скоуп по data-upload не нужен.
+  return screen.getByRole('button', { name: ru.catalog.upload });
 }
 
 function openImportDialog(): Promise<HTMLElement> {

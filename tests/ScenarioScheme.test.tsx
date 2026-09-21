@@ -126,6 +126,28 @@ describe('ScenarioScheme: заголовок и сводка (SPEC §4.3:261)', 
   });
 });
 
+// DN-ysk (SPEC 1.9, §4.3:263): полоса A0 убрана, «‹ Сценарии» переезжает в
+// строку подписи схемы — слева от заголовка (там раньше было пусто). Разметка
+// и стили — перенесены из удалённого Header.module.css (.back/.backIcon).
+describe('ScenarioScheme: «‹ Сценарии» в строке подписи (SPEC §4.3:263, DN-ysk)', () => {
+  it('кнопка стоит перед заголовком ru.scheme.title, с иконкой, и диспатчит closeScenario', () => {
+    const { container } = renderScheme();
+    const region = screen.getByRole('region', { name: ru.scheme.title });
+    const back = within(region).getByRole('button', { name: ru.scheme.back });
+    expect(back).toHaveAttribute('type', 'button');
+    expect(back.querySelector('svg')).not.toBeNull();
+
+    const heading = within(region).getByText(ru.scheme.title);
+    expect(Boolean(back.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
+      true,
+    );
+
+    fireEvent.click(back);
+    // closeScenario обнуляет state.scenario — компонент возвращает null (см. ниже).
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
 describe('ScenarioScheme: блоки (SPEC §4.3:263 — шапка блока: номер, название, «{k} шагов»)', () => {
   it('три блока: названия из фикстуры, номера 1/2/3, «11 шагов» дважды и «7 шагов» один раз', () => {
     renderScheme();
@@ -146,8 +168,13 @@ describe('ScenarioScheme: блоки (SPEC §4.3:263 — шапка блока: 
 
 describe('ScenarioScheme: список шагов (SPEC §4.3:265)', () => {
   it('29 кнопок [data-step-id] в порядке flatSteps, aria-current="step" ровно у активного шага 1.10', () => {
-    renderScheme('1.10');
-    const buttons = screen.getAllByRole('button');
+    const { container } = renderScheme('1.10');
+    // DN-ysk (§4.3:263): «‹ Сценарии» — тоже button внутри той же section,
+    // но без data-step-id — getAllByRole('button') ловил бы и её; считаем
+    // только кнопки шагов.
+    const buttons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('button[data-step-id]'),
+    );
     expect(buttons).toHaveLength(29);
     expect(buttons.map((button) => button.getAttribute('data-step-id'))).toEqual(
       steps.map((step) => step.id),
@@ -172,8 +199,12 @@ describe('ScenarioScheme: список шагов (SPEC §4.3:265)', () => {
   });
 
   it('иконка внешней ссылки и data-link="true" — ровно у 24 кнопок, и только у шагов с url', () => {
-    renderScheme();
-    const buttons = screen.getAllByRole('button');
+    const { container } = renderScheme();
+    // DN-ysk (§4.3:263): «‹ Сценарии» тоже button без data-step-id — исключаем
+    // её из выборки, как и в тесте выше.
+    const buttons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('button[data-step-id]'),
+    );
     const withIcon = buttons.filter(
       (button) => button.querySelector('svg[data-icon="external-link"]') !== null,
     );

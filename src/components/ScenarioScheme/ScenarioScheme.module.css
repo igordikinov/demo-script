@@ -18,6 +18,46 @@
   padding-bottom: var(--scp-spacing-lg);
 }
 
+/*
+ * «‹ Сценарии» (§4.3:263, DN-ysk) — ссылка-кнопка со сбросом стилей <button>
+ * из UA; правила перенесены из удалённой шапки A0
+ * (design/catalog-mockup.html:22–23 и :187). Текст — 12/16, как подпись и
+ * сводка: строка подписи остаётся 16 px, а ряд вместе с padding-bottom — 32 px,
+ * как до подселения кнопки. При font: inherit (14/20) кнопка задавала высоту
+ * ряда и он вырастал до 36 px.
+ */
+.back {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: baseline;
+  gap: var(--dn-scheme-back-gap);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: var(--scp-xs-regular), sans-serif;
+  color: var(--scp-color-neutral-600);
+  cursor: pointer;
+}
+
+.back:hover,
+.back:focus-visible {
+  color: var(--brand-700);
+}
+
+/*
+ * Шеврон ‹ 16×16 (design/catalog-mockup.html:187). По центру, а не по базовой
+ * линии — как иконки в Button и в строке шага: своей базовой линии у svg нет,
+ * и, останься шеврон выровненным по базовой линии, inline-flex взял бы её
+ * у него, а текст кнопки сел бы ниже «СХЕМА СЦЕНАРИЯ» и сводки. Так базовую
+ * линию кнопки задаёт её текст, и все три текста строки стоят на одной линии.
+ */
+.backIcon {
+  flex: 0 0 auto;
+  align-self: center;
+  width: var(--dn-scheme-back-icon-size);
+  height: var(--dn-scheme-back-icon-size);
+}
+
 .summary {
   margin-inline-start: auto;
   font: var(--scp-xs-regular), sans-serif;

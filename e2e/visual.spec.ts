@@ -108,10 +108,15 @@ test.describe('V2 — ТК 21 (SPEC §8:417): окно с отчётом, 1440×
     await stubStand(page);
     await stubProcessMap(page);
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto('/?scenario=deployment-demo&step=1.10');
-    await expect(page.getByRole('heading', { level: 1, name: stepTitle('1.10') })).toBeVisible();
-
-    await page.getByRole('banner').getByRole('button', { name: ru.header.upload }).click();
+    // DN-ysk (§4.8:350): окно загрузки теперь входит только из каталога —
+    // экран открытого сценария такой кнопки не даёт. Снимок поэтому идёт
+    // поверх каталога, а не карточки 1.10: расхождение с фоном на
+    // design/v2-import.png (там фон — карточка) ожидаемо, решение владельца
+    // 21.09.2026, задачу на него заводить не нужно (см. visual-qa в плане DN-ysk).
+    await page.goto('/');
+    // Пустые «Мои» на старте (§4.2:257) — открывает primary A5.1, не строку
+    // заголовка (там кнопки нет, пока «Мои» пусты).
+    await page.getByRole('button', { name: ru.catalog.upload }).click();
     const dialog = page.getByRole('dialog', { name: ru.importModal.title });
     await expect(dialog).toBeVisible();
 
@@ -186,7 +191,9 @@ test.describe('V5 — ТК 33 (SPEC §8:429, §4.8:341): окно A4′, 1440×9
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
 
-    await page.getByRole('banner').getByRole('button', { name: ru.header.upload }).click();
+    // DN-ysk (§4.2:247): кнопка живёт в строке заголовка каталога, а не в
+    // шапке A0 (которой больше нет) — data-upload="catalog" (тест-хук).
+    await page.locator('[data-upload="catalog"]').click();
     const dialog = page.getByRole('dialog', { name: ru.importModal.title });
     await expect(dialog).toBeVisible();
 

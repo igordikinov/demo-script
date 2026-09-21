@@ -63,7 +63,7 @@ test.describe('DL1 — ТК 14 и 30 в браузере (SPEC §8:410, §4.7:32
     expect(new URL(page.url()).searchParams.get('foo')).toBe('1');
     expect(await page.evaluate(() => history.length)).toBe(len);
 
-    await page.getByRole('button', { name: ru.header.back }).click();
+    await page.getByRole('button', { name: ru.scheme.back }).click();
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
     expect(new URL(page.url()).search).toBe('?foo=1');
     expect(await page.evaluate(() => history.length)).toBe(len);
@@ -123,7 +123,9 @@ test.describe('DL5 — ссылка переживает перезагрузк�
 });
 
 test.describe('DL6 — «мой» сценарий по адресу (SPEC §4.7:320, необязательно)', () => {
-  test('открывается на заданном шаге, в шапке Tag «мой»', async ({ page }) => {
+  test('открывается на заданном шаге, без баннера (DN-ysk: Tag/название на экране не показываются)', async ({
+    page,
+  }) => {
     await page.addInitScript(
       (args: { key: string; item: unknown }) => {
         window.localStorage.setItem(args.key, JSON.stringify({ schema: 1, items: [args.item] }));
@@ -152,7 +154,7 @@ test.describe('DL6 — «мой» сценарий по адресу (SPEC §4.7
     const errors = collectErrors(page);
     await page.goto('/?scenario=my-deployment-demo&step=3.7');
     await expect(page.getByRole('heading', { level: 1, name: title('3.7') })).toBeVisible();
-    await expect(page.getByRole('banner')).toContainText(ru.header.tagLocal);
+    await expect(page.getByRole('banner')).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 });

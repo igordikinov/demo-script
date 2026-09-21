@@ -2,8 +2,12 @@
 // макет design/catalog-mockup.html:96–154 (A5) и :162–177 (A5.1), снимок design/v3-catalog.png.
 // App показывает его, пока сценарий не открыт (§4.7:320).
 //
-// - Заголовок «Сценарии» и поиск справа (§4.2:247); поиск фильтрует оба раздела
-//   сразу, число в шапке раздела — с учётом поиска (§4.2:249).
+// - Заголовок «Сценарии», поиск и «Загрузить из Excel» справа (§4.2:247, DN-ysk);
+//   поиск фильтрует оба раздела сразу, число в шапке раздела — с учётом поиска
+//   (§4.2:249). Кнопка загрузки лежит в разметке после разделов (порядок Tab,
+//   §4.2:254), а в строку заголовка её ставит сетка .page. При пустых «Моих»
+//   (A5.1) её нет вовсе: загрузку открывает primary в пунктирном блоке
+//   (§4.2:257).
 // - Разделы сверху вниз: «Общие» (§3.7) и «Мои» (§3.6). Порядок строк — как в
 //   сторе: «Общие» — порядок index.json (§3.7:228), «Мои» — новые сверху (§3.6:204).
 //   Каталог сам не сортирует.
@@ -26,6 +30,7 @@ import { toIndexItem } from '../../model/scenarioIndex.ts';
 import { useAppStore } from '../../state/context.ts';
 import { findInLibrary } from '../../state/library.ts';
 import { Button } from '../ui/Button.tsx';
+import { UploadIcon } from '../ui/icons.tsx';
 import { SearchField } from '../ui/SearchField.tsx';
 import { CatalogSection } from './CatalogSection.tsx';
 import { CatalogTable } from './CatalogTable.tsx';
@@ -176,6 +181,36 @@ export function Catalog({ now = defaultNow }: CatalogProps) {
         >
           {localBody}
         </CatalogSection>
+        {/*
+          Кнопка загрузки (§4.2:247, DN-ysk): верхней полосы A0 больше нет
+          (§4.1:238), и при непустых «Моих» загрузить файл было бы неоткуда —
+          primary-кнопку рисует только A5.1 (§4.2:257). data-upload — хук для
+          тестов (как data-scheme-row): текст тот же, что у кнопки A5.1.
+
+          Пока «Мои» пусты, кнопки в строке заголовка нет: на A5.1 загрузку
+          открывает primary в пунктирном блоке (§4.2:257), двух входов рядом
+          не держим. Условие — по библиотеке, а не по localRows: поиск,
+          который всё отсеял, кнопку не убирает.
+
+          В разметке кнопка идёт последней в .page, а показывается в строке
+          заголовка справа (.upload в Catalog.module.css кладёт её в первую
+          строку сетки). Иначе Tab из поиска попадал бы на неё, а не на первую
+          строку списка, как требует §4.2:254 (вся строка — кнопка, Enter
+          открывает сценарий).
+        */}
+        {localItems.length > 0 && (
+          <Button
+            className={styles.upload}
+            variant="stroked"
+            icon={<UploadIcon />}
+            data-upload="catalog"
+            onClick={() => {
+              dispatch({ type: 'openImport' });
+            }}
+          >
+            {ru.catalog.upload}
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -190,6 +190,48 @@ describe('Modal', () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
+  it('опенер размонтирован в том же коммите, что закрытие (DN-ysk, §4.8:329) — фокус остаётся на body, без исключений', async () => {
+    // Как ImportModal при submit: React батчит closeModal и размонтирование
+    // каталога в одном коммите (кнопка-опенер — часть каталога) — cleanup
+    // эффекта Modal видит уже оторванный от DOM узел и не должен пытаться
+    // вызвать focus() на нём.
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      const [showTrigger, setShowTrigger] = useState(true);
+      return (
+        <>
+          {showTrigger && (
+            <button type="button" onClick={() => setOpen(true)}>
+              Загрузить из Excel
+            </button>
+          )}
+          <Modal
+            open={open}
+            title="Загрузка из Excel"
+            width={720}
+            closeLabel="Закрыть"
+            onClose={() => {
+              setOpen(false);
+              setShowTrigger(false);
+            }}
+          >
+            Тело
+          </Modal>
+        </>
+      );
+    }
+    render(<Harness />);
+    const trigger = screen.getByRole('button', { name: 'Загрузить из Excel' });
+    trigger.focus();
+    fireEvent.click(trigger);
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.queryByRole('button', { name: 'Загрузить из Excel' })).not.toBeInTheDocument();
+    expect(document.body).toHaveFocus();
+  });
+
   it('ловушка Tab: с последнего фокусируемого элемента Tab уходит на первый, Shift+Tab с первого — на последний', async () => {
     render(
       <Modal

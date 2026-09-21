@@ -1,5 +1,5 @@
 // Контракт App — план DN-10, раздел 3.5: App = StoreProvider(AppShell),
-// AppShell = <Header/><main/><Toast restartKey={toast?.seq}/> (без restartKey
+// AppShell = <main/><Toast restartKey={toast?.seq}/> (без restartKey
 // повторный showToast с тем же текстом не перезапускает отсчёт — план,
 // дефект «D9» из Toast, здесь проверяется через AppShell). seq передаётся
 // именно в restartKey, а не в key: живой регион role="status" — один и тот
@@ -17,7 +17,7 @@ import { toIndexItem } from '../src/model/scenarioIndex';
 import { LIBRARY_KEY } from '../src/state/library';
 import type { FetchFn } from '../src/state/shared';
 import { ru } from '../src/i18n/ru';
-import { appBanner } from './helpers';
+import { expectNoPageBanner } from './helpers';
 import fixtureJson from './fixtures/deployment-demo.json';
 
 const fixture = fixtureJson as {
@@ -27,7 +27,7 @@ const fixture = fixtureJson as {
   blocks: { title: string; steps: Record<string, unknown>[] }[];
 };
 
-/** Копия хелпера tests/Header.test.tsx:29-47 — общий не заводим (риск мёржа с DN-16/DN-26). */
+/** Копия хелпера tests/reducer.test.ts:36-52 — общий не заводим (риск мёржа с DN-16/DN-26). */
 function buildScenario(id: string, source: 'repo' | 'local'): Scenario {
   const clone = JSON.parse(JSON.stringify(fixture)) as typeof fixture;
   return ScenarioSchema.parse({
@@ -54,11 +54,9 @@ describe('App', () => {
     expect(screen.getByRole('main')).toBeInTheDocument();
   });
 
-  it('шапка каталога видна вместе с main (А1)', () => {
+  it('баннера нет, main виден (А1, DN-ysk: полосы A0 больше нет)', () => {
     render(<App />);
-    const banner = screen.getByRole('banner');
-    expect(banner).toBeInTheDocument();
-    expect(screen.getByText(ru.header.appTitle)).toBeInTheDocument();
+    expectNoPageBanner();
     expect(screen.getByRole('main')).toBeInTheDocument();
   });
 });
@@ -229,7 +227,7 @@ function findStep(source: Scenario, stepId: string) {
   return step;
 }
 
-describe('App: раскладка и переходы экрана сценария (SPEC §4.1:241, §4.3, §4.4, §4.7:318; DN-26)', () => {
+describe('App: раскладка и переходы экрана сценария (SPEC §4.3:263, §4.4, §4.7:318; DN-26, DN-ysk)', () => {
   const shared = buildScenario('deployment-demo', 'repo');
   const mine = buildScenario('my-deployment-demo', 'local');
 
@@ -257,9 +255,11 @@ describe('App: раскладка и переходы экрана сценар�
     });
   }
 
-  // appBanner (различает шапку A0 и заголовок StepCard внутри <article> —
-  // aria-query 5.3.0 не учитывает ancestor-констрейнт banner) — tests/helpers.ts,
-  // общий для всех jsdom-тестов, где сценарий может быть открыт.
+  // expectNoPageBanner (различает несуществующий баннер A0 и заголовок
+  // StepCard внутри <article> — aria-query 5.3.0 не учитывает
+  // ancestor-констрейнт banner) — tests/helpers.ts, общий для всех
+  // jsdom-тестов, где сценарий может быть открыт (DN-ysk: полосы A0 больше
+  // нет ни на одном экране).
 
   interface ProbeSnapshot {
     scenario: string | null;
@@ -277,14 +277,14 @@ describe('App: раскладка и переходы экрана сценар�
     return JSON.parse(screen.getByTestId('state-probe').textContent ?? '{}') as ProbeSnapshot;
   }
 
-  it('прокрутка: открытие и возврат в каталог начинаются с верха страницы; полоса схемы scrollIntoView не вызывает (SPEC §4.1:241, §4.3:267, §4.10:358, DN-91e)', () => {
+  it('прокрутка: открытие и возврат в каталог начинаются с верха страницы; полоса схемы scrollIntoView не вызывает (SPEC §4.3:263, §4.3:267, §4.10:358, DN-91e)', () => {
     seedLibrary([mine]);
     render(
       <StoreProvider>
         <AppShell />
       </StoreProvider>,
     );
-    // AppShell сбрасывает прокрутку окна при смене сценария (SPEC §4.1:241,
+    // AppShell сбрасывает прокрутку окна при смене сценария (SPEC §4.3:263,
     // §4.10:358) через window.scrollTo(0, 0) (DN-26). Заглушка — tests/setup.ts
     // (как и scrollIntoView ниже): jsdom реализует scrollTo, но пишет «Not
     // implemented» в консоль и не совершает прокрутку.
@@ -314,7 +314,7 @@ describe('App: раскладка и переходы экрана сценар�
     expect(scrollToSpy).toHaveBeenCalledTimes(1);
     expect(scrollIntoView).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
+    fireEvent.click(screen.getByRole('button', { name: ru.scheme.back }));
     expect(screen.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeInTheDocument();
     expect(scrollToSpy).toHaveBeenCalledTimes(2);
     expect(scrollToSpy).toHaveBeenLastCalledWith(0, 0);
@@ -347,7 +347,7 @@ describe('App: раскладка и переходы экрана сценар�
     expect(activeStep).toHaveAttribute('aria-current', 'step');
   });
 
-  it('«мой»: клик строки открывает сценарий на первом шаге, Tag «мой», без Tag «общий» (А3)', () => {
+  it('«мой»: клик строки открывает сценарий на первом шаге, без баннера и без названия/Tag на экране (А3, DN-ysk)', () => {
     seedLibrary([mine]);
     render(
       <StoreProvider>
@@ -364,9 +364,10 @@ describe('App: раскладка и переходы экрана сценар�
     expect(screen.getByText(ru.card.position(1, 1, 11))).toBeInTheDocument();
     expect(probeState()).toEqual({ scenario: 'my-deployment-demo', stepId: '1.1' });
 
-    const banner = within(appBanner());
-    expect(banner.getByText(ru.header.tagLocal)).toBeInTheDocument();
-    expect(banner.queryByText(ru.header.tagRepo)).not.toBeInTheDocument();
+    // DN-ysk: полосы A0 нет, название сценария и Tag «мой»/«общий» нигде не
+    // показываются (владелец — вики-страница снаружи встроенного вида).
+    expectNoPageBanner();
+    expect(screen.queryByText(mine.title)).not.toBeInTheDocument();
 
     expect(screen.getByRole('region', { name: ru.scheme.title })).toBeInTheDocument();
     expect(
@@ -374,7 +375,7 @@ describe('App: раскладка и переходы экрана сценар�
     ).not.toBeInTheDocument();
   });
 
-  it('общий: открытие на первом шаге, переход к 1.10, «‹ Сценарии», повторное открытие без повторного fetch (А4–А7)', async () => {
+  it('общий: открытие на первом шаге, переход к 1.10, «‹ Сценарии», повторное открытие без повторного fetch (А4–А7, DN-ysk)', async () => {
     const fetchFn = sharedFetch();
     render(
       <StoreProvider fetchFn={fetchFn}>
@@ -390,9 +391,9 @@ describe('App: раскладка и переходы экрана сценар�
 
     const s11 = findStep(shared, '1.1');
     expect(await screen.findByRole('heading', { level: 1, name: s11.title })).toBeInTheDocument();
-    let banner = within(appBanner());
-    expect(banner.getByText(ru.header.tagRepo)).toBeInTheDocument();
-    expect(banner.queryByText(ru.header.tagLocal)).not.toBeInTheDocument();
+    // DN-ysk: нет баннера и нет названия сценария на экране (было — Tag «общий»).
+    expectNoPageBanner();
+    expect(screen.queryByText(shared.title)).not.toBeInTheDocument();
     expect(probeState()).toEqual({ scenario: 'deployment-demo', stepId: '1.1' });
 
     // А5
@@ -408,13 +409,11 @@ describe('App: раскладка и переходы экрана сценар�
     expect(probeState().stepId).toBe('1.10');
 
     // А6
-    fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
+    fireEvent.click(screen.getByRole('button', { name: ru.scheme.back }));
     expect(screen.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: ru.scheme.title })).not.toBeInTheDocument();
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
-    banner = within(appBanner());
-    expect(banner.queryByText(ru.header.tagRepo)).not.toBeInTheDocument();
-    expect(banner.queryByText(ru.header.tagLocal)).not.toBeInTheDocument();
+    expectNoPageBanner();
     expect(probeState()).toEqual({ scenario: null, stepId: null });
 
     const sharedRegionAgain = screen.getByRole('region', { name: ru.catalog.sharedTitle });

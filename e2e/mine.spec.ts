@@ -1,8 +1,9 @@
 // «Мои» в браузере: запись при загрузке (SPEC §4.8:350, §3.6:203-205) и окно
 // удаления A5.2 (SPEC §4.2:255). ТК 18 (SPEC §8:414) указывает
 // e2e/import.spec.ts, но по решению оркестратора проверяется здесь целиком —
-// bd DN-25 (запись при загрузке, тост) и bd DN-26 (карточка 1.1, Tag «мой» в
-// шапке, «‹ Сценарии» → строка в «Моих»; после слияния DN-26 в эту ветку).
+// bd DN-25 (запись при загрузке, тост) и bd DN-26 (карточка 1.1,
+// «‹ Сценарии» → строка в «Моих»; после слияния DN-26 в эту ветку). DN-ysk:
+// баннера (и Tag «мой»/«общий» в нём) больше нет ни на одном экране.
 //
 // Юнит-уровень того же поведения — tests/import.test.tsx (ТК 27/28) и
 // tests/DeleteDialog.test.tsx; здесь — то, что видно только в браузере:
@@ -76,15 +77,17 @@ async function seedOneMine(page: Page, id: string): Promise<void> {
   );
 }
 
-test.describe('M1 — ТК 18 (SPEC §8:414), дословно', () => {
-  test('пустые «Мои» → «Загрузить из Excel» → файл фикстуры → «Добавить в мои» → тост → карточка 1.1, Tag «мой»; «‹ Сценарии» → строка в «Моих»', async ({
+test.describe('M1 — ТК 18 (SPEC §8:414, DN-ysk: без Tag/названия в баннере — его больше нет)', () => {
+  test('пустые «Мои» → «Загрузить из Excel» → файл фикстуры → «Добавить в мои» → тост → карточка 1.1; «‹ Сценарии» → строка в «Моих»', async ({
     page,
   }) => {
     await page.goto('/');
     const local = page.getByRole('region', { name: ru.catalog.localTitle });
     await expect(local.getByText(ru.catalog.localEmpty)).toBeVisible();
 
-    await page.getByRole('banner').getByRole('button', { name: ru.header.upload }).click();
+    // DN-ysk (§4.2:257): «Мои» пусты — строка заголовка каталога кнопку не
+    // рисует, загрузку открывает primary A5.1 (не шапка A0, которой больше нет).
+    await page.getByRole('button', { name: ru.catalog.upload }).click();
     const dialog = page.getByRole('dialog', { name: ru.importModal.title });
     await expect(dialog).toBeVisible();
 
@@ -99,20 +102,17 @@ test.describe('M1 — ТК 18 (SPEC §8:414), дословно', () => {
 
     await expect(dialog).toBeHidden();
     await expect(page.getByRole('status')).toHaveText(ru.importModal.added(29));
-    const banner = page.getByRole('banner');
-    await expect(banner).toContainText(fixture.title);
 
     expect(await storedLibraryIds(page)).toEqual([FIX_ID]);
 
-    // Карточка 1.1 (SPEC §4.4:271, §4.9:354 — открытие на первом шаге) и Tag
-    // «мой» в шапке по scenario.source === 'local' (SPEC §4.1:241, §3.6:203).
+    // Карточка 1.1 (SPEC §4.4:271, §4.9:354 — открытие на первом шаге). DN-ysk:
+    // баннера нет, название сценария и Tag «мой»/«общий» нигде не показываются.
     await expect(page.getByRole('heading', { level: 1, name: s11.title })).toBeVisible();
     await expect(page.getByText(ru.card.position(1, 1, block1Steps.length))).toBeVisible();
-    await expect(banner.getByText(ru.header.tagLocal, { exact: true })).toBeVisible();
-    await expect(banner.getByText(ru.header.tagRepo, { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('banner')).toHaveCount(0);
 
-    // «‹ Сценарии» (SPEC §4.1:241) возвращает в каталог, строка «моего» на месте.
-    await page.getByRole('button', { name: ru.header.back }).click();
+    // «‹ Сценарии» (SPEC §4.3:263) возвращает в каталог, строка «моего» на месте.
+    await page.getByRole('button', { name: ru.scheme.back }).click();
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
     const row = local.locator(`tr[data-scenario-id="${FIX_ID}"]`);
     await expect(row).toBeVisible();

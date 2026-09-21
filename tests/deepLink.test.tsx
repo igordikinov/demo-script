@@ -21,7 +21,7 @@ import { buildScenarioIndex, toIndexItem } from '../src/model/scenarioIndex';
 import { LIBRARY_KEY } from '../src/state/library';
 import type { FetchFn } from '../src/state/shared';
 import { ru } from '../src/i18n/ru';
-import { appBanner } from './helpers';
+import { expectNoPageBanner } from './helpers';
 
 // Эталон содержания — tests/fixtures/deployment-demo.json (CLAUDE.md: не
 // придумывать содержание сценария).
@@ -237,7 +237,7 @@ describe('ТК 30 — SPEC §8:426', () => {
     const len = window.history.length;
     const pushSpy = vi.spyOn(window.history, 'pushState');
 
-    fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
+    fireEvent.click(screen.getByRole('button', { name: ru.scheme.back }));
     await screen.findByRole('heading', { level: 1, name: ru.catalog.title });
     await waitFor(() => expect(window.location.search).toBe(''));
     expect(pushSpy).not.toHaveBeenCalled();
@@ -261,7 +261,7 @@ describe('Прочие параметры адреса (SPEC §4.7:324)', () => 
     );
     expect(window.history.state).toEqual({ keep: 1 });
 
-    fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
+    fireEvent.click(screen.getByRole('button', { name: ru.scheme.back }));
     await screen.findByRole('heading', { level: 1, name: ru.catalog.title });
     await waitFor(() =>
       expect(window.location.href).toBe('http://localhost:3000/sub/dir/?foo=1#top'),
@@ -292,7 +292,7 @@ describe('Прочие параметры адреса (SPEC §4.7:324)', () => 
 });
 
 describe('«Мой» сценарий по адресу (SPEC §4.7:320)', () => {
-  it('открывается из библиотеки на заданном шаге, без запроса файла, с Tag «мой»', async () => {
+  it('открывается из библиотеки на заданном шаге, без запроса файла, без баннера и без названия/Tag на экране (DN-ysk)', async () => {
     const local = buildScenario('my-deployment-demo', 'local');
     seedLibrary([local]);
     const fetchFn = defaultFetch();
@@ -300,9 +300,11 @@ describe('«Мой» сценарий по адресу (SPEC §4.7:320)', () =>
     mount({ fetchFn });
 
     await screen.findByRole('heading', { level: 1, name: stepTitle('3.7') });
-    // getByRole('banner') находит два <header> (шапка и заголовок StepCard
-    // внутри <article>) — tests/helpers.ts:5-13, tests/App.test.tsx и др.
-    expect(within(appBanner()).getByText(ru.header.tagLocal)).toBeInTheDocument();
+    // DN-ysk (SPEC §4.1): полосы A0 нет, название сценария и Tag «мой»/«общий»
+    // нигде не показываются — getByRole('banner') не находит ни одного
+    // элемента вне <article> (tests/helpers.ts).
+    expectNoPageBanner();
+    expect(screen.queryByText(local.title)).not.toBeInTheDocument();
     expect(fetchFn).not.toHaveBeenCalledWith('./scenarios/my-deployment-demo.json');
   });
 });
@@ -320,7 +322,7 @@ describe('Открытие из каталога обновляет адрес (
     await screen.findByRole('heading', { level: 1, name: stepTitle('1.1') });
     await waitFor(() => expect(window.location.search).toBe('?scenario=deployment-demo&step=1.1'));
 
-    fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
+    fireEvent.click(screen.getByRole('button', { name: ru.scheme.back }));
     await screen.findByRole('heading', { level: 1, name: ru.catalog.title });
 
     const local1 = screen.getByRole('region', { name: ru.catalog.localTitle });
@@ -412,7 +414,7 @@ describe('Разбор адреса ровно один раз', () => {
     mount({ fetchFn });
     await screen.findByRole('heading', { level: 1, name: stepTitle('1.1') });
 
-    fireEvent.click(screen.getByRole('button', { name: ru.header.back }));
+    fireEvent.click(screen.getByRole('button', { name: ru.scheme.back }));
     await screen.findByRole('heading', { level: 1, name: ru.catalog.title });
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));

@@ -233,8 +233,8 @@ describe('ru: выборочно по разделам, дословно из SP
     expect(ru.shared.loadFailed).toBe('Не удалось загрузить общие сценарии');
   });
 
-  it('header.back (SPEC:239, текст без иконки-шеврона — план DN-03 п.0.3)', () => {
-    expect(ru.header.back).toBe('Сценарии');
+  it('scheme.back (SPEC §4.3:263, DN-ysk: текст без иконки-шеврона — план DN-03 п.0.3)', () => {
+    expect(ru.scheme.back).toBe('Сценарии');
   });
 
   it('catalog.localEmpty (SPEC:255)', () => {

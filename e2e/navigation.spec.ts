@@ -123,31 +123,12 @@ test.describe('N1 — 1440×1000, ТК 13 в браузере (SPEC §8:409, §4
   });
 });
 
-test.describe('N2 — окно загрузки блокирует ← → (SPEC §4.5:290, §4.8:329)', () => {
-  test('клавиши не листают шаг, пока открыто окно загрузки; после Escape листают снова', async ({
-    page,
-  }) => {
-    const errors = collectErrors(page);
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await openShared(page);
-
-    await page.getByRole('button', { name: ru.header.upload }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('heading', { level: 1, name: title('1.1') })).toBeVisible();
-
-    await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
-    await expect(page.getByRole('heading', { level: 1, name: title('1.1') })).toBeVisible();
-
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('heading', { level: 1, name: title('1.2') })).toBeVisible();
-
-    expect(errors).toEqual([]);
-  });
-});
+// N2 — окно загрузки блокирует ← → (SPEC §4.5:290, §4.8:329) — удалён (DN-ysk):
+// §4.8:350 закрыл вход в загрузку с экрана открытого сценария (окно теперь
+// открывается только из каталога), сценарий теста стал невоспроизводимым.
+// Отдельного ТК в §8 на этот сценарий не было — покрытие «окно блокирует ← →»
+// остаётся в tests/navigation.test.tsx:286 (jsdom, initialState с modal
+// напрямую, минуя UI).
 
 test.describe('N3a — 1024×768: шапка карточки видна, прокрутка карточки не нужна (SPEC §4.5:291)', () => {
   test('после → шапка остаётся в viewport, scrollY не меняется', async ({ page }) => {
@@ -169,12 +150,17 @@ test.describe('N3a — 1024×768: шапка карточки видна, про
   });
 });
 
-test.describe('N3b — 1024×600: шапка карточки ниже края, → прокручивает страницу к карточке (SPEC §4.5:291)', () => {
+test.describe('N3b — 1024×544: шапка карточки ниже края, → прокручивает страницу к карточке (SPEC §4.5:291)', () => {
   test('открытие не прокручивает страницу; после → шапка карточки видна целиком, scrollY > 0', async ({
     page,
   }) => {
     const errors = collectErrors(page);
-    await page.setViewportSize({ width: 1024, height: 600 });
+    // 1024×544, не ×600: без полосы A0 (§4.1, DN-ysk) вся страница выше на
+    // 56 px, и при 600 шапка карточки на 1.1 залезала в вьюпорт на 2 px
+    // (0.028 от высоты) — точность toBeInViewport() 1024×600 больше не даёт
+    // «шапка ниже края». Высота уменьшена на те же 56 px, чтобы прекондишн
+    // теста (шапка полностью за кадром на первом шаге) снова выполнялся.
+    await page.setViewportSize({ width: 1024, height: 544 });
     await openShared(page);
 
     expect(await page.evaluate(() => window.scrollY)).toBe(0);

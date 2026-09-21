@@ -29,21 +29,16 @@ import { fileURLToPath } from 'node:url';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AppShell } from '../src/App';
 import { StoreProvider } from '../src/state/store';
-import {
-  appReducer,
-  createInitialState,
-  type AppAction,
-  type AppState,
-} from '../src/state/reducer';
+import type { AppAction, AppState } from '../src/state/reducer';
 import { useAppStore } from '../src/state/context';
 import { ScenarioSchema, type Scenario } from '../src/model/schema';
+import { LIBRARY_KEY } from '../src/state/library';
 import { ru } from '../src/i18n/ru';
 import { writeWorkbook, type SheetSpec } from '../src/excel/write';
 import { COLUMNS } from '../src/excel/columns';
 import { readWorkbook } from '../src/excel/read';
 import { loadXlsx } from '../src/excel/xlsx';
 import { XLSX_MIME_TYPE } from '../src/components/ui/download';
-import { appBanner } from './helpers';
 import fixtureJson from './fixtures/deployment-demo.json';
 
 const importMetaUrl = import.meta.url;
@@ -55,7 +50,7 @@ const fixture = fixtureJson as {
   blocks: { title: string; steps: Record<string, unknown>[] }[];
 };
 
-/** Копия хелпера tests/Header.test.tsx:29-47 — общий вынести нельзя (риск мёржа с DN-16/DN-25). */
+/** Копия хелпера tests/reducer.test.ts:36-52 — общий вынести нельзя (риск мёржа с DN-16/DN-25). */
 function buildScenario(id: string, source: 'repo' | 'local'): Scenario {
   const clone = JSON.parse(JSON.stringify(fixture)) as typeof fixture;
   return ScenarioSchema.parse({
@@ -83,7 +78,7 @@ interface ProbeSnapshot {
   toast: string | null;
 }
 
-/** Зонд состояния — по образцу tests/Header.test.tsx:52-64/tests/App.test.tsx:67-71. */
+/** Зонд состояния — по образцу tests/App.test.tsx:67-71. */
 function Probe({ capture }: { capture?: (dispatch: Dispatch<AppAction>) => void }) {
   const { state, dispatch } = useAppStore();
   capture?.(dispatch);
@@ -113,15 +108,16 @@ function probeState(): ProbeSnapshot {
 }
 
 function uploadButton(): HTMLElement {
-  // Скоуп на шапку A0 (tests/helpers.ts, не screen.getByRole('banner')
-  // напрямую): пустые «Мои» (A5.1, SPEC §4.2:257, DN-24) рисуют свою
-  // primary-кнопку с тем же текстом ru.catalog.upload === ru.header.upload, а
-  // с открытым сценарием (DN-26) второй <header> — заголовок StepCard внутри
-  // <article> — без appBanner() getByRole('banner') находит оба.
-  return within(appBanner()).getByRole('button', { name: ru.header.upload });
+  // DN-ysk (SPEC §4.2:247, §4.2:257): полосы A0 больше нет. Пока «Мои» пусты,
+  // строка заголовка каталога кнопку не рисует вовсе — открывает загрузку
+  // только primary в пунктирном блоке EmptyMine (решение владельца 21.09.2026,
+  // bd DN-ysk); как только в «Моих» есть хоть один сценарий, эти два места не
+  // сосуществуют — в каждый момент времени с текстом ru.catalog.upload виден
+  // ровно один <button>, скоуп по data-upload не нужен.
+  return screen.getByRole('button', { name: ru.catalog.upload });
 }
 
-/** Клик по кнопке шапки, дожидается появления диалога (SPEC §4.8:329).
+/** Клик по кнопке заголовка каталога, дожидается появления диалога (SPEC §4.8:329).
  * .focus() перед click — как в tests/Modal.test.tsx:184-185: jsdom не переводит
  * фокус на элемент при клике сам по себе, а возврат фокуса на кнопку после
  * закрытия (SPEC §4.8:329) проверяется через сравнение с document.activeElement. */
@@ -296,7 +292,7 @@ const CLOSE_CASES: readonly [string, (dialog: HTMLElement) => void][] = [
 ];
 
 describe.each(CLOSE_CASES)('закрытие окна: %s (SPEC §4.8:329)', (_label, close) => {
-  it('диалог исчезает, фокус возвращается на кнопку шапки', async () => {
+  it('диалог исчезает, фокус возвращается на кнопку-опенер (DN-ysk: при пустых «Моих» — primary EmptyMine)', async () => {
     renderApp();
     const trigger = uploadButton();
     const dialog = await openImportDialog();
@@ -405,9 +401,8 @@ describe('Чистый файл (deployment-demo.xlsx) — SPEC §4.8:339, ТК 
 });
 
 describe('Нажатие primary после чистого файла (SPEC §4.8:350)', () => {
-  it('окно закрывается, сценарий открыт на первом шаге, тост «добавлен», фокус на кнопке шапки', async () => {
+  it('окно закрывается, сценарий открыт на первом шаге, тост «добавлен»; кнопка-опенер размонтирована вместе с каталогом (DN-ysk)', async () => {
     renderApp();
-    const trigger = uploadButton();
     const dialog = await openImportDialog();
 
     selectFile(dialog, freshFixFile());
@@ -419,27 +414,33 @@ describe('Нажатие primary после чистого файла (SPEC §4.
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('status')).toHaveTextContent(ru.importModal.added(29));
-    // Сценарий уже открыт (второй <header> — StepCard внутри <article>,
-    // DN-26): шапка A0 — только через appBanner() (tests/helpers.ts).
-    expect(within(appBanner()).getByText(fixture.title)).toBeInTheDocument();
+    // DN-ysk (§4.8:329, §4.8:350): submit размонтирует каталог вместе с
+    // кнопкой-опенером в одном коммите (React батчит closeModal+openScenario).
+    // Modal.tsx возвращает фокус на опенер, только если тот ещё в DOM
+    // (opener.isConnected) — здесь его нет, фокус остаётся на body. Путь
+    // «открыл → закрыл без сабмита» (каталог остаётся смонтированным)
+    // по-прежнему возвращает фокус — см. describe.each(CLOSE_CASES) выше.
+    expect(screen.queryByRole('button', { name: ru.catalog.upload })).not.toBeInTheDocument();
+    expect(document.body).toHaveFocus();
+    // Название сценария нигде на экране не показывается (DN-ysk, §4.1).
+    expect(screen.queryByText(fixture.title)).not.toBeInTheDocument();
 
     const probe = probeState();
     // id «моего» — 'my-' + слаг названия фикстуры (SPEC §3.6:203), см. tests/import.test.tsx.
     expect(probe.scenarioId).toBe('my-deployment-demo-scenariy');
     expect(probe.stepId).toBe('1.1');
-    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });
 
 describe('ТК 19 (SPEC §8:415, дословно)', () => {
   it('файл с E04 → «Добавить в мои» disabled, подсказка видна; «Отмена» — прежний сценарий на месте', async () => {
-    const scenario = buildScenario('deployment-demo', 'repo');
-    const initialState = appReducer(createInitialState(), {
-      type: 'openScenario',
-      scenario,
-      stepId: '1.10',
-    });
-    renderApp(initialState);
+    // DN-ysk (§4.8:350): окно теперь открывается только из каталога — открыть
+    // его с уже открытым сценарием больше нельзя (входа в загрузку там нет,
+    // §4.1). «Прежний сценарий» здесь — нетронутая строка «Моих» в каталоге,
+    // а не карточка открытого сценария.
+    const existing = buildScenario('my-deployment-demo', 'local');
+    window.localStorage.setItem(LIBRARY_KEY, JSON.stringify({ schema: 1, items: [existing] }));
+    renderApp();
 
     const dialog = await openImportDialog();
     selectFile(dialog, await bookFile(E04_SHEETS, 'bad.xlsx'));
@@ -472,9 +473,12 @@ describe('ТК 19 (SPEC §8:415, дословно)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
     const probe = probeState();
-    expect(probe.scenarioId).toBe('deployment-demo');
-    expect(probe.stepId).toBe('1.10');
+    expect(probe.scenarioId).toBeNull();
     expect(probe.toast).toBeNull();
+    // «Прежний сценарий на месте»: строка «Моих» не тронута отменённой загрузкой.
+    expect(screen.getByRole('region', { name: ru.catalog.localTitle })).toHaveTextContent(
+      existing.title,
+    );
   });
 });
 

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { ru } from '../src/i18n/ru';
 import { writeWorkbook, type SheetSpec } from '../src/excel/write';
+import { stepTitle } from './helpers';
 
 const FIXTURE_PATH = fileURLToPath(
   new URL('../tests/fixtures/deployment-demo.xlsx', import.meta.url),
@@ -42,11 +43,14 @@ test.describe('E1 — ТК 19 (SPEC §8:415)', () => {
     page,
   }) => {
     await page.goto('/');
-    // Скоуп на <header> (role="banner"): A5.1 (пустые «Мои») тоже рисует
-    // primary «Загрузить из Excel» тем же текстом (SPEC §4.2:257), без
-    // скоупа locator находит два элемента (strict mode violation).
-    const header = page.getByRole('banner');
-    await header.getByRole('button', { name: ru.header.upload }).click();
+    // DN-ysk (§4.8:350, §4.2:247, §4.2:257): полосы A0 нет, окно открывается
+    // только из каталога. Пока «Мои» пусты (здесь — старт с чистого
+    // localStorage), строка заголовка кнопку не рисует вовсе — открывает
+    // primary A5.1; после первой загрузки «Мои» не пусты, и текст переезжает
+    // в строку заголовка. Оба места не сосуществуют — getByRole по тексту
+    // ru.catalog.upload остаётся однозначным в обоих состояниях.
+    const upload = page.getByRole('button', { name: ru.catalog.upload });
+    await upload.click();
     const dialog = page.getByRole('dialog', { name: ru.importModal.title });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: ru.importModal.dropPrompt })).toBeFocused();
@@ -63,29 +67,40 @@ test.describe('E1 — ТК 19 (SPEC §8:415)', () => {
 
     await expect(dialog).toBeHidden();
     await expect(page.getByRole('status')).toHaveText(ru.importModal.added(29));
-    await expect(page.getByRole('banner')).toContainText('Deployment — демо-сценарий');
+
+    // Сценарий открыт на первом шаге (DN-ysk: название сценария на экране не
+    // показывается — открытие проверяем по заголовку карточки).
+    await expect(page.getByRole('heading', { level: 1, name: stepTitle('1.1') })).toBeVisible();
+
+    // Окно загрузки теперь входит только из каталога (§4.8:350) — возврат
+    // нужен, прежде чем открыть его повторно для файла с E04.
+    await page.getByRole('button', { name: ru.scheme.back }).click();
+    await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
 
     // Повторное открытие: файл с E04 блокирует primary и показывает подсказку.
-    await header.getByRole('button', { name: ru.header.upload }).click();
+    await upload.click();
     await expect(dialog).toBeVisible();
     await input.setInputFiles({ name: 'bad.xlsx', mimeType: XLSX_MIME, buffer: await e04Buffer() });
     await expect(dialog.getByText(ru.report.levels.danger)).toBeVisible();
     await expect(submit).toBeDisabled();
     await expect(dialog.getByText(ru.importModal.fixErrors)).toBeVisible();
 
-    // «Отмена» — прежний сценарий на месте (карточка не рендерится, DN-24/26 — проверка по шапке).
+    // «Отмена» — прежний сценарий на месте: строка «Моих» из первой загрузки не тронута.
     await dialog.getByRole('button', { name: ru.importModal.cancel }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole('banner')).toContainText('Deployment — демо-сценарий');
-    await expect(header.getByRole('button', { name: ru.header.upload })).toBeFocused();
+    const local = page.getByRole('region', { name: ru.catalog.localTitle });
+    await expect(
+      local.locator('tr[data-scenario-id]').getByText('Deployment — демо-сценарий'),
+    ).toBeVisible();
+    await expect(upload).toBeFocused();
   });
 });
 
 test.describe('E2 — шаблон (SPEC §6:368, §7:381)', () => {
   test('«Скачать шаблон» отдаёт xlsx с ожидаемым именем', async ({ page }) => {
     await page.goto('/');
-    // Скоуп на <header>: см. комментарий в E1 выше.
-    await page.getByRole('banner').getByRole('button', { name: ru.header.upload }).click();
+    // Пустые «Мои» на старте — открывает primary A5.1, см. комментарий в E1 выше.
+    await page.getByRole('button', { name: ru.catalog.upload }).click();
     const dialog = page.getByRole('dialog', { name: ru.importModal.title });
 
     const downloadPromise = page.waitForEvent('download');
@@ -103,8 +118,8 @@ test.describe('E2 — шаблон (SPEC §6:368, §7:381)', () => {
 test.describe('E3 — прокрутка отчёта (SPEC §4.8:339)', () => {
   test('R13 (13 строк) — max-height 360px и overflow-y auto', async ({ page }) => {
     await page.goto('/');
-    // Скоуп на <header>: см. комментарий в E1 выше.
-    await page.getByRole('banner').getByRole('button', { name: ru.header.upload }).click();
+    // Пустые «Мои» на старте — открывает primary A5.1, см. комментарий в E1 выше.
+    await page.getByRole('button', { name: ru.catalog.upload }).click();
     const dialog = page.getByRole('dialog', { name: ru.importModal.title });
     const input = dialog.locator('input[type="file"]');
     await input.setInputFiles({ name: 'r13.xlsx', mimeType: XLSX_MIME, buffer: await r13Buffer() });
@@ -134,8 +149,8 @@ test.describe('E4 — высота зоны выбора во время раз�
     });
 
     await page.goto('/');
-    // Скоуп на <header>: см. комментарий в E1 выше.
-    await page.getByRole('banner').getByRole('button', { name: ru.header.upload }).click();
+    // Пустые «Мои» на старте — открывает primary A5.1, см. комментарий в E1 выше.
+    await page.getByRole('button', { name: ru.catalog.upload }).click();
     const dialog = page.getByRole('dialog', { name: ru.importModal.title });
     const zoneHeight = async (name: string): Promise<number> => {
       const box = await dialog.getByRole('button', { name }).boundingBox();

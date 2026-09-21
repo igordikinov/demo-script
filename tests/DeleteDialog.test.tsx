@@ -21,7 +21,7 @@ const fixture = fixtureJson as {
   blocks: { title: string; steps: Record<string, unknown>[] }[];
 };
 
-/** Копия приёма tests/Header.test.tsx:29-47 — общий хелпер не заводим. */
+/** Копия приёма tests/reducer.test.ts:36-52 — общий хелпер не заводим. */
 function buildScenario(id: string): Scenario {
   const clone = JSON.parse(JSON.stringify(fixture)) as typeof fixture;
   return ScenarioSchema.parse({

@@ -55,7 +55,7 @@ interface ScenarioOverrides {
   stepUrlOverrides?: Record<string, string>;
 }
 
-/** Копия приёма tests/Header.test.tsx:29-47, с точечной правкой url шага. */
+/** Копия приёма tests/reducer.test.ts:36-52, с точечной правкой url шага. */
 function buildScenario(overrides: ScenarioOverrides): Scenario {
   const clone = JSON.parse(JSON.stringify(fixture)) as typeof fixture;
   return ScenarioSchema.parse({
@@ -159,7 +159,7 @@ interface ProbeSnapshot {
   toast: string | null;
 }
 
-/** Зонд состояния — по образцу tests/Header.test.tsx/tests/ImportModal.test.tsx: <pre>, не <output> (роль "status" тоста). */
+/** Зонд состояния — по образцу tests/ImportModal.test.tsx:87-100: <pre>, не <output> (роль "status" тоста). */
 function Probe() {
   const { state } = useAppStore();
   const snapshot: ProbeSnapshot = {
@@ -388,7 +388,10 @@ describe('Catalog: «Мои» пусты — A5.1 (SPEC §4.2:257, ТК 26)', ()
 
   it('«Загрузить из Excel» в A5.1 открывает окно импорта', () => {
     renderCatalog();
-    fireEvent.click(screen.getByRole('button', { name: ru.catalog.upload }));
+    // DN-ysk (SPEC §4.2:247): строка заголовка каталога теперь тоже рисует
+    // кнопку «Загрузить из Excel» (тем же текстом, что и primary A5.1) —
+    // без скоупа на localSection() getByRole нашёл бы два элемента.
+    fireEvent.click(within(localSection()).getByRole('button', { name: ru.catalog.upload }));
     expect(probeState().modal).toEqual({ kind: 'import' });
   });
 
@@ -402,6 +405,53 @@ describe('Catalog: «Мои» пусты — A5.1 (SPEC §4.2:257, ТК 26)', ()
     renderCatalog();
     search('zzz');
     expect(screen.getByText(ru.catalog.localEmpty)).toBeInTheDocument();
+  });
+});
+
+// DN-ysk (SPEC 1.9, §4.2:247): полоса A0 убрана, «Загрузить из Excel»
+// переезжает в строку заголовка каталога (h1 «Сценарии» → SearchField →
+// кнопка) — иначе при непустых «Моих» загрузить файл стало бы неоткуда
+// (EmptyMine рисует свою primary-кнопку только при пустых «Моих»).
+describe('Catalog: «Загрузить из Excel» в строке заголовка (SPEC §4.2:247, DN-ysk)', () => {
+  it('видна и при непустых «Моих» (data-upload="catalog"), клик открывает окно импорта', () => {
+    seedLibrary([mNew]);
+    renderCatalog({ fetchFn: sharedFetch() });
+
+    const upload = screen.getByRole('button', { name: ru.catalog.upload });
+    expect(upload).toHaveAttribute('data-upload', 'catalog');
+    fireEvent.click(upload);
+    expect(probeState().modal).toEqual({ kind: 'import' });
+  });
+
+  it('порядок в DOM: заголовок → поиск → «Загрузить из Excel»', () => {
+    seedLibrary([mNew]);
+    renderCatalog({ fetchFn: sharedFetch() });
+
+    const heading = screen.getByRole('heading', { level: 1, name: ru.catalog.title });
+    const search = screen.getByRole('searchbox', { name: ru.catalog.searchPlaceholder });
+    const upload = screen.getByRole('button', { name: ru.catalog.upload });
+    expect(
+      Boolean(heading.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true);
+    expect(Boolean(search.compareDocumentPosition(upload) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
+      true,
+    );
+  });
+
+  it('поиск без совпадений в обоих разделах («Ничего не найдено») кнопку не прячет — условие по библиотеке, а не по результату поиска (SPEC §4.2:247, DN-ysk)', async () => {
+    seedLibrary([mOld, mNew]);
+    renderCatalog({ fetchFn: sharedFetch() });
+    await waitFor(() => expect(rowIds(sharedSection())).toHaveLength(3));
+
+    search('zzz');
+
+    expect(within(sharedSection()).getByText(ru.catalog.notFound)).toBeInTheDocument();
+    expect(within(localSection()).getByText(ru.catalog.notFound)).toBeInTheDocument();
+
+    const upload = screen.getByRole('button', { name: ru.catalog.upload });
+    expect(upload).toHaveAttribute('data-upload', 'catalog');
+    fireEvent.click(upload);
+    expect(probeState().modal).toEqual({ kind: 'import' });
   });
 });
 

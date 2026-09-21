@@ -9,14 +9,26 @@
   padding: var(--scp-spacing-3xl);
 }
 
-/* CAT:36 — max-width 1120 px (§4.2:248), без центрирования, как на v3-catalog.png */
+/*
+ * CAT:36 — max-width 1120 px (§4.2:248), без центрирования, как на v3-catalog.png.
+ * Сетка в две колонки нужна только «Загрузить из Excel» (§4.2:247, DN-ysk):
+ * кнопка лежит в разметке последней, чтобы Tab из поиска вёл на первую строку
+ * списка (§4.2:254), а показывается в первой строке справа от поиска. Вторая
+ * колонка — ширина кнопки: место под неё зарезервировано, поле поиска под неё
+ * не уезжает. При пустых «Моих» кнопки нет (A5.1, §4.2:257) — max-content
+ * даёт нулевую колонку, и строка заголовка занимает всю ширину.
+ */
 .page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
   max-width: var(--dn-catalog-max-width);
 }
 
 /* CAT:37 */
 .titleRow {
   display: flex;
+  grid-row: 1;
+  grid-column: 1;
   align-items: center;
   gap: var(--scp-spacing-lg);
   margin-bottom: var(--scp-spacing-2xl);
@@ -32,14 +44,33 @@
 
 /* CAT:100 — .spacer перед полем: поиск прижат вправо */
 .search {
+  flex: 0 0 auto;
   margin-left: auto;
 }
 
 /*
+ * «Загрузить из Excel» правее поиска (§4.2:247, DN-ysk). Первая строка сетки
+ * .page, вторая колонка: в разметке кнопка идёт после разделов (порядок Tab,
+ * §4.2:254). align-self: start — верх кнопки вровень с полем поиска: высота
+ * строки задана .titleRow вместе с её нижним отступом, у поля и у кнопки она
+ * одна (--scp-btn-height-md). Отступ слева — тот же промежуток, что в .titleRow;
+ * ширину второй колонки он задаёт вместе с кнопкой. Кнопка и поле не сжимаются:
+ * на узком окне ужимается заголовок, переноса нет.
+ */
+.upload {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: start;
+  margin-left: var(--scp-spacing-lg);
+}
+
+/*
  * CAT:40. overflow: hidden — фон строки при hover не выходит за скруглённые
- * углы карточки у последней строки.
+ * углы карточки у последней строки. Раздел занимает обе колонки .page: вторая
+ * держит только кнопку загрузки первой строки.
  */
 .section {
+  grid-column: 1 / -1;
   margin-bottom: var(--scp-spacing-2xl);
   overflow: hidden;
   border: 1px solid var(--scp-color-neutral-100);

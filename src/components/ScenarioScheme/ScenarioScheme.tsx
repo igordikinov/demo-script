@@ -3,12 +3,16 @@
 // полоса прокручивает саму себя по горизонтали до активного шага и страницу по
 // вертикали не двигает (DN-91e). Блоки не сворачиваются (§4.3:267, §11 вопрос 5).
 // В каталоге (сценарий не открыт) ничего не рисует.
+//
+// Слева в строке подписи — «‹ Сценарии» (§4.3:263, DN-ysk): верхней полосы A0
+// больше нет (§4.1:238), возврат в каталог живёт здесь. Разметка и стили
+// перенесены из удалённой шапки (design/catalog-mockup.html:187–199).
 import { useEffect, useId, useRef } from 'react';
 import { ru } from '../../i18n/ru.ts';
 import { isScreenUrl } from '../../model/url.ts';
 import { useAppStore } from '../../state/context.ts';
 import { flatSteps } from '../../state/reducer.ts';
-import { ArrowRightIcon, ExternalLinkIcon } from '../ui/icons.tsx';
+import { ArrowRightIcon, ChevronLeftIcon, ExternalLinkIcon } from '../ui/icons.tsx';
 import { SectionCaption } from '../ui/SectionCaption.tsx';
 import { VisuallyHidden } from '../ui/VisuallyHidden.tsx';
 import styles from './ScenarioScheme.module.css';
@@ -56,6 +60,16 @@ export function ScenarioScheme() {
   return (
     <section className={styles.strip} aria-labelledby={titleId}>
       <div className={styles.header}>
+        <button
+          type="button"
+          className={styles.back}
+          onClick={() => {
+            dispatch({ type: 'closeScenario' });
+          }}
+        >
+          <ChevronLeftIcon className={styles.backIcon} />
+          {ru.scheme.back}
+        </button>
         <SectionCaption as="h2" id={titleId}>
           {ru.scheme.title}
         </SectionCaption>

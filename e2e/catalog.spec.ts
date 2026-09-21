@@ -33,6 +33,18 @@ const fixture = JSON.parse(readFileSync(FIXTURE_JSON_PATH, 'utf8')) as {
   blocks: { title: string; steps: Record<string, unknown>[] }[];
 };
 
+/** Шаг 1.1 фикстуры — заголовок карточки первого шага (DN-ysk: название
+ * сценария на экране не показывается, открытие проверяется по нему). */
+const block1 = fixture.blocks[0];
+if (block1 === undefined) {
+  throw new Error('фикстура: нет блока 1');
+}
+const block1Steps = block1.steps as { id: string; title: string }[];
+const s11 = block1Steps[0];
+if (s11 === undefined) {
+  throw new Error('фикстура: нет шага 1.1 в блоке 1');
+}
+
 // Собранные npm run scenarios файлы (predev перед playwright webServer) —
 // та же пара, что читает браузер (SHARED_INDEX_URL, sharedScenarioUrl).
 const INDEX_JSON_PATH = fileURLToPath(new URL('../public/scenarios/index.json', import.meta.url));
@@ -170,9 +182,12 @@ test.describe('C1 — каталог с данными (ТК 26, SPEC §8:422)',
 
     // Клик по ячейке «Шагов» (не по названию) — вся строка кнопка (SPEC §4.2:254).
     await row.locator('td').nth(3).click();
-    await expect(page.getByRole('banner')).toContainText('Deployment — демо-сценарий');
     // Каталог скрыт: его h1 «Сценарии» больше не в документе. Не любой h1 —
-    // открытая карточка шага рисует свой h1 с названием шага (SPEC §4.4:273, DN-26).
+    // открытая карточка шага рисует свой h1 с названием шага (SPEC §4.4:273,
+    // DN-26). DN-ysk: баннера нет вовсе, название сценария на экране не
+    // показывается — открытие проверяем по заголовку карточки первого шага.
+    await expect(page.getByRole('heading', { level: 1, name: s11.title })).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveCount(0);
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toHaveCount(0);
 
     expect(errors).toEqual([]);
@@ -212,7 +227,10 @@ test.describe('C2 — Enter и фокус строки (SPEC §4.2:254)', () => 
     await expect(row.locator('svg[data-icon="chevron-right"]')).toBeVisible();
 
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('banner')).toContainText('Deployment — демо-сценарий');
+    // DN-ysk: баннера нет, название сценария на экране не показывается —
+    // открытие проверяем по заголовку карточки первого шага.
+    await expect(page.getByRole('heading', { level: 1, name: s11.title })).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveCount(0);
   });
 });
 
@@ -231,7 +249,9 @@ test.describe('C3 — «Мои» (SPEC §3.6:204, §4.2:255)', () => {
 
     await rows.nth(0).getByRole('button', { name: ru.catalog.deleteFromBrowser }).click();
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
-    await expect(page.getByRole('banner')).not.toContainText(ru.header.back);
+    // Корзина не открывает сценарий (DN-ysk: «‹ Сценарии» — единственный
+    // признак открытого сценария, баннера с ним больше нет вовсе).
+    await expect(page.getByRole('button', { name: ru.scheme.back })).toHaveCount(0);
 
     const search = page.getByRole('searchbox', { name: ru.catalog.searchPlaceholder });
     const shared = page.getByRole('region', { name: ru.catalog.sharedTitle });
@@ -268,7 +288,9 @@ test.describe('C4 — ТК 31 в браузере (SPEC §8:427)', () => {
       .locator('tr[data-scenario-id="my-deployment-demo"]')
       .getByRole('button', { name: 'Deployment — демо-сценарий' })
       .click();
-    await expect(page.getByRole('banner')).toContainText('Deployment — демо-сценарий');
+    // DN-ysk: баннера нет, название сценария на экране не показывается —
+    // открытие проверяем по заголовку карточки первого шага.
+    await expect(page.getByRole('heading', { level: 1, name: s11.title })).toBeVisible();
 
     // page.goto('/'), не page.reload(): после DN-16 адрес открытого «моего»
     // хранит ?scenario=...&step=... (SPEC §4.7:320,325), и reload() снова
@@ -401,5 +423,29 @@ test.describe('C7 — «Загрузить из Excel» из A5.1 (SPEC §4.2:25
 
     await local.getByRole('button', { name: ru.catalog.upload }).click();
     await expect(page.getByRole('dialog', { name: ru.importModal.title })).toBeVisible();
+  });
+});
+
+test.describe('C8 — «Загрузить из Excel» в строке заголовка каталога (SPEC §4.2:247, DN-ysk)', () => {
+  test('видна при непустых «Моих», открывает окно, фокус возвращается после закрытия', async ({
+    page,
+  }) => {
+    await seedMyScenarios(page);
+    await page.goto('/');
+
+    const local = page.getByRole('region', { name: ru.catalog.localTitle });
+    await expect(local.locator('tr[data-scenario-id]')).toHaveCount(2);
+
+    // data-upload="catalog" — тест-хук: тем же текстом рисуется ещё и
+    // primary-кнопка A5.1, но при непустых «Моих» она не рендерится.
+    const upload = page.locator('[data-upload="catalog"]');
+    await expect(upload).toHaveText(ru.catalog.upload);
+    await upload.click();
+
+    const dialog = page.getByRole('dialog', { name: ru.importModal.title });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(upload).toBeFocused();
   });
 });

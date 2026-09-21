@@ -112,7 +112,7 @@ function CatalogRow({ item, now, onOpen, onDelete }: CatalogRowProps) {
         </button>
         <div className={styles.sub}>{item.fileName}</div>
       </td>
-      {/* Badge — только у непустого модуля, как в шапке (§4.1:241). */}
+      {/* Модуль не заполнен — ячейка пустая, без Badge (§4.2:252). */}
       <td className={styles.module}>
         {item.module !== '' && <Badge tone="module">{item.module}</Badge>}
       </td>

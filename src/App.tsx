@@ -1,7 +1,8 @@
-// Корень приложения: стор (SPEC §1:15) → шапка A0 (§4.1), область содержимого,
-// окно загрузки A4 (§4.8:329) и хост тоста (§4.8:350). В области содержимого —
+// Корень приложения: стор (SPEC §1:15) → область содержимого, окно загрузки A4
+// (§4.8:329) и хост тоста (§4.8:350). Верхней полосы A0 нет (§4.1:238, DN-ysk):
+// наверху страницы сразу каталог или полоса схемы. В области содержимого —
 // каталог, пока сценарий не открыт (§4.2:245, §4.7:320; DN-24). Открытый
-// сценарий (DN-26) — раскладка v2:43–90: полоса схемы на всю ширину под шапкой
+// сценарий (DN-26) — раскладка v2:43–90: полоса схемы на всю ширину
 // (§4.3:263), под ней main с карточкой шага (§4.4:273). Полоса — соседка main,
 // а не его часть, как в макете; у main в обоих вариантах меняется только класс.
 // Под карточкой в том же main — встроенная карта процесса, если раскрыта
@@ -13,7 +14,6 @@ import { useAppStore } from './state/context.ts';
 import { useArrowKeys } from './hooks/useArrowKeys.ts';
 import { useStepDeepLink } from './hooks/useStepDeepLink.ts';
 import { StoreProvider } from './state/store.tsx';
-import { Header } from './components/Header/Header.tsx';
 import { ImportModal } from './components/ImportModal/ImportModal.tsx';
 import { DeleteDialog } from './components/DeleteDialog/DeleteDialog.tsx';
 import { Catalog } from './components/Catalog/Catalog.tsx';
@@ -34,7 +34,8 @@ export function AppShell() {
   // Смена экрана (открыт сценарий, другой сценарий или возврат в каталог)
   // начинается с верха страницы, как в design/v2-card.png: иначе прокрутка
   // каталога (страница прокручивается целиком, SPEC §4.10:358) переходит на
-  // экран сценария и шапка с «‹ Сценарии» (§4.1:241) уезжает за край окна.
+  // экран сценария и строка подписи схемы с «‹ Сценарии» (§4.3:263) уезжает
+  // за край окна.
   // Layout-, а не обычный эффект: он успевает до passive-эффектов экрана
   // (полосы схемы и карточки), и сброс не спорит с их прокруткой. С DN-91e
   // полоса окно и не двигает: она правит только свой scrollLeft (§4.3:267).
@@ -49,7 +50,6 @@ export function AppShell() {
 
   return (
     <>
-      <Header />
       {scenario !== null && <ScenarioScheme />}
       <main className={scenario === null ? undefined : styles.scenario}>
         {scenario === null ? (

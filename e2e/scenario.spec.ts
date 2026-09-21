@@ -1,11 +1,11 @@
-// Переходы каталог ↔ сценарий и `Tag` источника в шапке — SPEC §4.1:236–241
-// (шапка A0, ссылка «‹ Сценарии», Tag «общий»/«мой»), §4.3 (полоса схемы
-// A2), §4.4:271–283 (карточка шага A3), §4.10:358 (ширина 1024–1920, при
-// нехватке высоты страница прокручивается, а не сворачивается). Юнит-уровень
-// (пропы, зонд стора, число вызовов fetchFn) — tests/App.test.tsx и
-// tests/Header.test.tsx; здесь — то, что нельзя увидеть в jsdom: реальная
-// геометрия (getBoundingClientRect, getComputedStyle), настоящая сеть и
-// прокрутка страницы.
+// Переходы каталог ↔ сценарий — SPEC §4.3 (полоса схемы A2, «‹ Сценарии» в
+// строке подписи), §4.4:271–283 (карточка шага A3), §4.10:358 (ширина
+// 1024–1920, при нехватке высоты страница прокручивается, а не
+// сворачивается). DN-ysk: полосы A0 больше нет ни на одном экране, название
+// сценария и Tag «общий»/«мой» нигде не показываются. Юнит-уровень (пропы,
+// зонд стора, число вызовов fetchFn) — tests/App.test.tsx; здесь — то, что
+// нельзя увидеть в jsdom: реальная геометрия (getBoundingClientRect,
+// getComputedStyle), настоящая сеть и прокрутка страницы.
 //
 // Данные — из public/scenarios/{index,deployment-demo}.json (predev →
 // npm run scenarios, как в e2e/catalog.spec.ts) и tests/fixtures/deployment-demo.json
@@ -97,7 +97,7 @@ function collectErrors(page: Page): string[] {
   return errors;
 }
 
-test.describe('S1 — общий: каталог → сценарий → шаг 1.10 → «‹ Сценарии» (SPEC §4.1:241, §4.3, §4.4)', () => {
+test.describe('S1 — общий: каталог → сценарий → шаг 1.10 → «‹ Сценарии» (SPEC §4.3:263, §4.4)', () => {
   test('полный путь без ошибок консоли', async ({ page }) => {
     const errors = collectErrors(page);
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -108,10 +108,8 @@ test.describe('S1 — общий: каталог → сценарий → шаг
     await expect(row).toBeVisible();
     await row.getByRole('button', { name: fixture.title }).click();
 
-    const banner = page.getByRole('banner');
-    await expect(banner).toContainText(fixture.title);
-    await expect(banner.getByText(ru.header.tagRepo, { exact: true })).toBeVisible();
-    await expect(banner.getByText(ru.header.tagLocal, { exact: true })).toHaveCount(0);
+    // DN-ysk: баннера нет, название сценария и Tag «общий»/«мой» нигде не показываются.
+    await expect(page.getByRole('banner')).toHaveCount(0);
 
     const scheme = page.getByRole('region', { name: ru.scheme.title });
     await expect(scheme).toBeVisible();
@@ -122,7 +120,7 @@ test.describe('S1 — общий: каталог → сценарий → шаг
     await expect(page.getByRole('heading', { level: 1, name: s110.title })).toBeVisible();
     await expect(page.getByText(ru.card.position(1, 10, 11))).toBeVisible();
 
-    await page.getByRole('button', { name: ru.header.back }).click();
+    await page.getByRole('button', { name: ru.scheme.back }).click();
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
     await expect(page.getByRole('region', { name: ru.scheme.title })).toHaveCount(0);
     await expect(page.getByRole('article')).toHaveCount(0);
@@ -131,8 +129,8 @@ test.describe('S1 — общий: каталог → сценарий → шаг
   });
 });
 
-test.describe('S2 — «мой»: строка в «Моих» → сценарий → «‹ Сценарии» (SPEC §4.1:241)', () => {
-  test('Tag «мой», после возврата строка снова видна в «Моих»', async ({ page }) => {
+test.describe('S2 — «мой»: строка в «Моих» → сценарий → «‹ Сценарии» (SPEC §4.3:263)', () => {
+  test('без баннера (DN-ysk), после возврата строка снова видна в «Моих»', async ({ page }) => {
     const errors = collectErrors(page);
     await seedMyScenarios(page);
     await page.goto('/');
@@ -142,11 +140,10 @@ test.describe('S2 — «мой»: строка в «Моих» → сценар�
     await expect(row).toBeVisible();
     await row.getByRole('button', { name: fixture.title }).click();
 
-    const banner = page.getByRole('banner');
-    await expect(banner.getByText(ru.header.tagLocal, { exact: true })).toBeVisible();
-    await expect(banner.getByText(ru.header.tagRepo, { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: s11.title })).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveCount(0);
 
-    await page.getByRole('button', { name: ru.header.back }).click();
+    await page.getByRole('button', { name: ru.scheme.back }).click();
     await expect(
       page
         .getByRole('region', { name: ru.catalog.localTitle })
@@ -180,8 +177,8 @@ test.describe('S3 — раскладка 1440×1000 (v2:43-90, SPEC §4.3, §4.4
       throw new Error('нет boundingBox у полосы схемы');
     }
     expect(Math.round(schemeBox.x)).toBe(0);
-    // 56 px — высота шапки (SPEC §4.1:238).
-    expect(Math.round(schemeBox.y)).toBe(56);
+    // DN-ysk: полосы A0 нет — схема начинается от самого верха страницы.
+    expect(Math.round(schemeBox.y)).toBe(0);
     expect(Math.round(schemeBox.width)).toBe(clientWidth);
 
     const article = page.getByRole('article');
@@ -252,113 +249,11 @@ test.describe('S4 — раскладка 1024×768: карточка не сжи
   });
 });
 
-test.describe('S5 — стиль Tag (design/catalog-mockup.html:26, SPEC §4.1:241, §5:364)', () => {
-  test('info-цвета, рамка, радиус, шрифт, высота 22 px; между Badge и кнопкой загрузки', async ({
-    page,
-  }) => {
-    const errors = collectErrors(page);
-    await page.goto('/');
-
-    const shared = page.getByRole('region', { name: ru.catalog.sharedTitle });
-    await shared
-      .locator('tr[data-scenario-id="deployment-demo"]')
-      .getByRole('button', { name: fixture.title })
-      .click();
-
-    const banner = page.getByRole('banner');
-    const tag = banner.getByText(ru.header.tagRepo, { exact: true });
-    await expect(tag).toBeVisible();
-
-    const style = await tag.evaluate((el) => {
-      const computed = getComputedStyle(el);
-      const box = el.getBoundingClientRect();
-      return {
-        backgroundColor: computed.backgroundColor,
-        color: computed.color,
-        borderTopWidth: computed.borderTopWidth,
-        borderTopStyle: computed.borderTopStyle,
-        borderTopColor: computed.borderTopColor,
-        borderRadius: computed.borderRadius,
-        fontSize: computed.fontSize,
-        fontWeight: computed.fontWeight,
-        lineHeight: computed.lineHeight,
-        paddingTop: computed.paddingTop,
-        paddingLeft: computed.paddingLeft,
-        height: Math.round(box.height),
-      };
-    });
-    // CAT:12 --info-bg/#f5f6f8, --info-fg/#5a5a5c; CAT:9 --line/#eaeaea.
-    expect(style.backgroundColor).toBe('rgb(245, 246, 248)');
-    expect(style.color).toBe('rgb(90, 90, 92)');
-    expect(style.borderTopWidth).toBe('1px');
-    expect(style.borderTopStyle).toBe('solid');
-    expect(style.borderTopColor).toBe('rgb(234, 234, 234)');
-    expect(style.borderRadius).toBe('4px');
-    expect(style.fontSize).toBe('12px');
-    expect(style.fontWeight).toBe('600');
-    expect(style.lineHeight).toBe('16px');
-    expect(style.paddingTop).toBe('2px');
-    expect(style.paddingLeft).toBe('8px');
-    expect(style.height).toBe(22);
-
-    const badgeBox = await banner.locator('[data-tone="module"]').boundingBox();
-    const tagBox = await tag.boundingBox();
-    const uploadBox = await banner.getByRole('button', { name: ru.header.upload }).boundingBox();
-    if (badgeBox === null || tagBox === null || uploadBox === null) {
-      throw new Error('нет boundingBox у Badge, Tag или кнопки загрузки');
-    }
-    expect(tagBox.x).toBeGreaterThan(badgeBox.x + badgeBox.width);
-    expect(tagBox.x + tagBox.width).toBeLessThan(uploadBox.x);
-
-    expect(errors).toEqual([]);
-  });
-});
-
-test.describe('S6 — длинное название в шапке 1024×768 (v2:30 — многоточие)', () => {
-  test('шапка без горизонтальной прокрутки, Tag виден целиком, название обрезано многоточием', async ({
-    page,
-  }) => {
-    const errors = collectErrors(page);
-    const longTitle = `${fixture.title} — `.repeat(8);
-    const item = {
-      ...localScenario('my-deployment-demo', new Date().toISOString(), 'deployment-demo.xlsx'),
-      title: longTitle,
-    };
-    await page.addInitScript(
-      (args: { key: string; items: LocalScenarioJson[] }) => {
-        window.localStorage.setItem(args.key, JSON.stringify({ schema: 1, items: args.items }));
-      },
-      { key: LIBRARY_KEY, items: [item] },
-    );
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto('/');
-
-    const local = page.getByRole('region', { name: ru.catalog.localTitle });
-    await local
-      .locator('tr[data-scenario-id="my-deployment-demo"]')
-      .getByRole('button', { name: longTitle })
-      .click();
-
-    const banner = page.getByRole('banner');
-    const bannerFits = await banner.evaluate((el) => el.scrollWidth <= el.clientWidth);
-    expect(bannerFits).toBe(true);
-
-    const tag = banner.getByText(ru.header.tagLocal, { exact: true });
-    await expect(tag).toBeVisible();
-    const tagBox = await tag.boundingBox();
-    const uploadBox = await banner.getByRole('button', { name: ru.header.upload }).boundingBox();
-    if (tagBox === null || uploadBox === null) {
-      throw new Error('нет boundingBox у Tag или кнопки загрузки');
-    }
-    expect(tagBox.x + tagBox.width).toBeLessThanOrEqual(uploadBox.x);
-
-    const titleNode = banner.getByText(longTitle, { exact: true });
-    const titleOverflows = await titleNode.evaluate((el) => el.scrollWidth > el.clientWidth);
-    expect(titleOverflows).toBe(true);
-
-    expect(errors).toEqual([]);
-  });
-});
+// S5 — стиль Tag источника в шапке — удалён (DN-ysk): Tag «общий»/«мой»
+// нигде на экране больше не показывается, примитив ui/Tag не рендерится.
+//
+// S6 — длинное название в шапке, обрезка многоточием — удалён (DN-ysk):
+// название сценария на экране не показывается, проверять обрезку негде.
 
 test.describe('S7 — повторное открытие общего без повторного fetch (SPEC §3.7:230)', () => {
   test('переоткрытие того же сценария не добавляет запросов index.json/deployment-demo.json', async ({
@@ -390,7 +285,7 @@ test.describe('S7 — повторное открытие общего без п
     const indexAfterFirstOpen = indexRequests;
     const scenarioAfterFirstOpen = scenarioRequests;
 
-    await page.getByRole('button', { name: ru.header.back }).click();
+    await page.getByRole('button', { name: ru.scheme.back }).click();
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
 
     await shared
@@ -405,8 +300,8 @@ test.describe('S7 — повторное открытие общего без п
   });
 });
 
-test.describe('S8 — открытие из прокрученного каталога 1024×768 (design/v2-card.png, SPEC §4.1:241, §4.10:358)', () => {
-  test('сценарий и возврат в каталог — с верха страницы: шапка и подпись схемы в окне', async ({
+test.describe('S8 — открытие из прокрученного каталога 1024×768 (design/v2-card.png, SPEC §4.3:263, §4.10:358)', () => {
+  test('сценарий и возврат в каталог — с верха страницы: «‹ Сценарии» и подпись схемы в окне', async ({
     page,
   }) => {
     const errors = collectErrors(page);
@@ -440,8 +335,10 @@ test.describe('S8 — открытие из прокрученного ката�
     await expect(scheme.locator('[data-step-id="1.1"]')).toHaveAttribute('aria-current', 'step');
 
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
-    await expect(page.getByRole('banner')).toBeInViewport({ ratio: 1 });
-    await expect(page.getByRole('button', { name: ru.header.back })).toBeInViewport({ ratio: 1 });
+    // DN-ysk: баннера нет — «‹ Сценарии» (первый фокусируемый элемент экрана
+    // сценария) теперь единственный ориентир «в окне с самого верха».
+    await expect(page.getByRole('banner')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: ru.scheme.back })).toBeInViewport({ ratio: 1 });
     await expect(scheme.getByRole('heading', { level: 2, name: ru.scheme.title })).toBeInViewport({
       ratio: 1,
     });
@@ -450,11 +347,37 @@ test.describe('S8 — открытие из прокрученного ката�
     // верха. dispatchEvent, а не click(): click() сам докрутил бы кнопку в окно.
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-    await page.getByRole('button', { name: ru.header.back }).dispatchEvent('click');
+    await page.getByRole('button', { name: ru.scheme.back }).dispatchEvent('click');
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeInViewport({
       ratio: 1,
     });
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('S9 — полосы A0 нет ни на одном экране (SPEC §4.1, DN-ysk)', () => {
+  test('баннера нет ни в каталоге, ни на экране сценария; входа в загрузку с открытым сценарием нет', async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveCount(0);
+
+    const shared = page.getByRole('region', { name: ru.catalog.sharedTitle });
+    await shared
+      .locator('tr[data-scenario-id="deployment-demo"]')
+      .getByRole('button', { name: fixture.title })
+      .click();
+    await expect(page.getByRole('heading', { level: 1, name: s11.title })).toBeVisible();
+
+    // §4.8:350: окно загрузки открывается только из каталога — на экране
+    // открытого сценария входа в загрузку нет вовсе.
+    await expect(page.getByRole('banner')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: ru.catalog.upload })).toHaveCount(0);
+    await expect(page.locator('[data-upload="catalog"]')).toHaveCount(0);
 
     expect(errors).toEqual([]);
   });
