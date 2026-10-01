@@ -158,6 +158,37 @@ describe('ru.catalog.openFailed (SPEC §4.2:252, DN-51k): дословно из 
   });
 });
 
+// Окно «Перенести в общие» A5.3 (SPEC §4.2:255, DN-rmz): body и stays вшиты в
+// шаблон дословно (внутри stays есть вложенные «Мои» — захватом [^»]+ не
+// взять), exists/cancel/submit захватываются из SPEC.
+describe('ru.exportDialog (SPEC §4.2:255, A5.3): дословно из SPEC.md', () => {
+  const EXPORT_WINDOW =
+    /Иконка «Перенести в общие» открывает окно 480 px «Перенести в общие» \(A5\.3\): текст «Скачайте файл «\{file\}», положите его в папку scenarios\/ репозитория и закоммитьте — после публикации сценарий появится в разделе «Общие»\. В файле не должно быть имён заказчиков\.»; при совпадении имени с существующим общим — ещё строка «([^»]+)»; ниже — «Из раздела «Мои» сценарий не пропадёт — после публикации его можно удалить»; кнопки «([^»]+)» и primary «([^»]+)»\./; // :255
+
+  it('exists, stays, cancel, submit совпадают со строкой SPEC после сверки шаблона', () => {
+    const m = specMatchOnce(EXPORT_WINDOW);
+    expect(ru.exportDialog.title).toBe('Перенести в общие');
+    expect(ru.exportDialog.exists).toBe(m[1]);
+    expect(ru.exportDialog.stays).toBe(
+      'Из раздела «Мои» сценарий не пропадёт — после публикации его можно удалить',
+    );
+    expect(ru.exportDialog.cancel).toBe(m[2]);
+    expect(ru.exportDialog.submit).toBe(m[3]);
+  });
+
+  it('body после подстановки {file} совпадает с шаблоном SPEC.md', () => {
+    specMatchOnce(EXPORT_WINDOW);
+    expect(ru.exportDialog.body('deployment-demo.xlsx')).toBe(
+      'Скачайте файл «deployment-demo.xlsx», положите его в папку scenarios/ репозитория и закоммитьте — после публикации сценарий появится в разделе «Общие». В файле не должно быть имён заказчиков.',
+    );
+  });
+
+  it('catalog.exportToShared — подпись иконки у «моих» (SPEC §4.2:255)', () => {
+    specMatchOnce(/У «моих» в колонке действия — иконка «([^»]+)» и корзина «Удалить из браузера»/);
+    expect(ru.catalog.exportToShared).toBe('Перенести в общие');
+  });
+});
+
 describe('ru: формулы с числами', () => {
   it('summary.text (SPEC §3.3:143)', () => {
     expect(ru.summary.text({ sheets: 3, blocks: 3, steps: 29, withLink: 24 })).toBe(

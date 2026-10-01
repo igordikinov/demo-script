@@ -650,6 +650,45 @@ describe('Catalog: корзина «моих» (SPEC §4.2:255, часть ТК 
   });
 });
 
+// Иконка «Перенести в общие» — SPEC §4.2:255 (A5.3), часть ТК 34 (SPEC §8:430);
+// само окно — tests/ExportDialog.test.tsx, имя файла и книгу считают чистые
+// функции src/excel/export.ts (tests/export.test.ts).
+describe('Catalog: иконка «Перенести в общие» (SPEC §4.2:255, ТК 34 — SPEC §8:430)', () => {
+  it('у «моих» есть слева от корзины; у «Общих» нет', async () => {
+    seedLibrary([mNew]);
+    renderCatalog({ fetchFn: sharedFetch() });
+    await waitFor(() => expect(rowIds(sharedSection())).toHaveLength(3));
+
+    const exportBtn = within(findRow(localSection(), mNew.id)).getByRole('button', {
+      name: ru.catalog.exportToShared,
+    });
+    expect(exportBtn).toHaveAttribute('data-variant', 'ghost');
+    expect(exportBtn.querySelector('svg[data-icon="download"]')).not.toBeNull();
+
+    const describedBy = exportBtn.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    const label = describedBy === null ? null : document.getElementById(describedBy);
+    expect(label).not.toBeNull();
+    expect(label).toHaveTextContent(mNew.title);
+
+    expect(
+      findRow(sharedSection(), 'deployment-demo').querySelector('svg[data-icon="download"]'),
+    ).toBeNull();
+  });
+
+  it('клик → openExport, сценарий не открывается', () => {
+    seedLibrary([mNew]);
+    renderCatalog({ fetchFn: sharedFetch() });
+    fireEvent.click(
+      within(findRow(localSection(), mNew.id)).getByRole('button', {
+        name: ru.catalog.exportToShared,
+      }),
+    );
+    expect(probeState().modal).toEqual({ kind: 'export', scenarioId: 'my-deployment-demo' });
+    expect(probeState().scenarioId).toBeNull();
+  });
+});
+
 // ТК 29 (SPEC §8:425), окно удаления A5.2 (SPEC §4.2:255): рендерится на уровне
 // AppShell (src/App.tsx: modal?.kind === 'delete'), поэтому здесь — AppShell, а
 // не голый Catalog, как в остальных describe этого файла.

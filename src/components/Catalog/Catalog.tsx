@@ -22,7 +22,8 @@
 // openShared (файл через кэш, §3.7:230). Не загрузился общий — тост
 // ru.catalog.openFailed с названием сценария (§4.2:252, DN-51k); текст
 // ru.shared.loadFailed остаётся за состоянием всего раздела. Адрес страницы —
-// DN-16, окно удаления A5.2 — DN-25: корзина только открывает его (openDelete).
+// DN-16, окно удаления A5.2 — DN-25: корзина только открывает его (openDelete),
+// окно переноса A5.3 — DN-rmz: иконка переноса открывает его (openExport).
 import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ru } from '../../i18n/ru.ts';
@@ -145,6 +146,9 @@ export function Catalog({ now = defaultNow }: CatalogProps) {
         onOpen={openLocal}
         onDelete={(id) => {
           dispatch({ type: 'openDelete', scenarioId: id });
+        }}
+        onExport={(id) => {
+          dispatch({ type: 'openExport', scenarioId: id });
         }}
       />
     );

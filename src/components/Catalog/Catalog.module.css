@@ -168,13 +168,21 @@
 }
 
 /*
- * Колонка действия 48 px (§4.2:252): отступ 8 + корзина 32 + 8. В макете у ячейки
- * общий отступ 20 px, и автораскладка растягивает её до ~72 px (v3-catalog.png).
+ * Колонка действия 88 px (§4.2:252): отступ 8 + перенос 32 + 8 + корзина 32 + 8.
+ * В макете у ячейки общий отступ 20 px, и автораскладка растягивает её шире
+ * (v3-catalog.png).
  */
 .table .actionCol {
   width: var(--dn-catalog-action-col-width);
   padding-inline: var(--scp-spacing-sm);
   text-align: center;
+}
+
+/* Две иконки «моих»: перенос и корзина (§4.2:255) в ряд с промежутком 8 px. */
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scp-spacing-sm);
 }
 
 /* CAT:53–54 — числа вправо, табличные цифры */

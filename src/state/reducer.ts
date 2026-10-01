@@ -19,8 +19,11 @@
 import type { Block, Scenario, Step } from '../model/schema.ts';
 import type { ScenarioIndexItem } from '../model/scenarioIndex.ts';
 
-/** Открытое модальное окно: загрузка A4 (§4.8) или удаление «моего» сценария A5.2 (§4.2:253). */
-export type ModalState = { kind: 'import' } | { kind: 'delete'; scenarioId: string };
+/** Открытое модальное окно: загрузка A4 (§4.8), удаление «моего» A5.2 (§4.2:253) или перенос в общие A5.3 (§4.2:255). */
+export type ModalState =
+  | { kind: 'import' }
+  | { kind: 'delete'; scenarioId: string }
+  | { kind: 'export'; scenarioId: string };
 
 /**
  * Тост. `seq` растёт на каждый `showToast`, даже с тем же текстом: потребитель
@@ -72,6 +75,7 @@ export type AppAction =
   | { type: 'prevStep' }
   | { type: 'openImport' }
   | { type: 'openDelete'; scenarioId: string }
+  | { type: 'openExport'; scenarioId: string }
   | { type: 'closeModal' }
   | { type: 'toggleMap' }
   | { type: 'setMapOpen'; open: boolean }
@@ -225,6 +229,11 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         return state;
       }
       return { ...state, modal: { kind: 'delete', scenarioId: action.scenarioId } };
+    case 'openExport':
+      if (state.modal?.kind === 'export' && state.modal.scenarioId === action.scenarioId) {
+        return state;
+      }
+      return { ...state, modal: { kind: 'export', scenarioId: action.scenarioId } };
     case 'closeModal':
       if (state.modal === null) {
         return state;

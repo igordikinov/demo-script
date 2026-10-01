@@ -382,8 +382,8 @@ test.describe('C5 — загрузка «Общих» (SPEC §4.2:256)', () => {
     await expect(skeletonRows).toHaveCount(3);
     const loadingBoxes = await cellBoxes(skeletonRows.first());
     expect(loadingBoxes).toHaveLength(7);
-    // Колонка действия 48 px (§4.2:252: 8 + 32 корзина/шеврон + 8) — уже во время загрузки.
-    expect(actionColumn(loadingBoxes).width).toBe(48);
+    // Колонка действия 88 px (§4.2:252: 8 + 32 перенос + 8 + 32 корзина/шеврон + 8) — уже во время загрузки.
+    expect(actionColumn(loadingBoxes).width).toBe(88);
 
     releaseGate();
     const dataRow = shared.locator('tr[data-scenario-id="deployment-demo"]');
@@ -399,7 +399,7 @@ test.describe('C5 — загрузка «Общих» (SPEC §4.2:256)', () => {
     const localBoxes = await cellBoxes(localRow);
     // Границы колонок «Общих» и «Моих» совпадают (общая шапка-раскладка).
     expect(localBoxes).toEqual(loadedBoxes);
-    expect(actionColumn(localBoxes).width).toBe(48);
+    expect(actionColumn(localBoxes).width).toBe(88);
   });
 });
 

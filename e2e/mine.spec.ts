@@ -150,3 +150,40 @@ test.describe('M2 — окно удаления A5.2 в браузере (SPEC �
     expect(await storedLibraryIds(page)).toEqual([]);
   });
 });
+
+// Окно «Перенести в общие» A5.3 (SPEC §4.2:255, DN-rmz, ТК 34 — SPEC §8:430):
+// в браузере видно то, чего не видно в jsdom, — реальные 480 px окна. Скачивание
+// не проверяется: имя файла и книгу считают чистые функции (tests/export.test.ts),
+// сам механизм Blob — tests/download.test.ts; юнит-уровень окна —
+// tests/ExportDialog.test.tsx.
+test.describe('M3 — окно «Перенести в общие» A5.3 в браузере (SPEC §4.2:255)', () => {
+  test('иконка → окно 480px с именем файла из id; «Закрыть» закрывает, «Мои» на месте', async ({
+    page,
+  }) => {
+    await seedOneMine(page, FIX_ID);
+    await page.goto('/');
+
+    const local = page.getByRole('region', { name: ru.catalog.localTitle });
+    const row = local.locator(`tr[data-scenario-id="${FIX_ID}"]`);
+    await expect(row).toBeVisible();
+
+    await row.getByRole('button', { name: ru.catalog.exportToShared }).click();
+
+    const dialog = page.getByRole('dialog', { name: ru.exportDialog.title });
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    if (box === null) throw new Error('окно A5.3 не видно');
+    expect(Math.round(box.width)).toBe(480);
+
+    // FIX_ID 'my-deployment-demo-scenariy' → файл 'deployment-demo-scenariy.xlsx'
+    // (SPEC §4.2:255: id без my- плюс .xlsx).
+    await expect(dialog).toContainText(ru.exportDialog.body('deployment-demo-scenariy.xlsx'));
+    await expect(dialog).toContainText(ru.exportDialog.stays);
+
+    await dialog.getByRole('button', { name: ru.exportDialog.cancel }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(row).toBeVisible();
+    expect(await storedLibraryIds(page)).toEqual([FIX_ID]);
+  });
+});

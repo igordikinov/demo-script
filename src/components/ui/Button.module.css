@@ -149,3 +149,25 @@
   background: transparent;
   color: var(--scp-text-neutral-disable);
 }
+
+/*
+ * ghost — иконка «Перенести в общие» у «моих» (§4.2:255, A5.3): та же
+ * .icon-btn (CAT:33–34), что у корзины, но без danger — при наведении и
+ * фокусе с клавиатуры иконка темнеет до основного текста, фон холста.
+ */
+.button[data-variant='ghost'] {
+  border: 0;
+  background: transparent;
+  color: var(--scp-color-neutral-500);
+}
+
+.button[data-variant='ghost']:hover:not(:disabled),
+.button[data-variant='ghost']:focus-visible:not(:disabled) {
+  background: var(--scp-bg-canvas);
+  color: var(--scp-color-neutral-800);
+}
+
+.button[data-variant='ghost']:disabled {
+  background: transparent;
+  color: var(--scp-text-neutral-disable);
+}

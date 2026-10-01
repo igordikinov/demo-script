@@ -16,6 +16,7 @@ import { useStepDeepLink } from './hooks/useStepDeepLink.ts';
 import { StoreProvider } from './state/store.tsx';
 import { ImportModal } from './components/ImportModal/ImportModal.tsx';
 import { DeleteDialog } from './components/DeleteDialog/DeleteDialog.tsx';
+import { ExportDialog } from './components/ExportDialog/ExportDialog.tsx';
 import { Catalog } from './components/Catalog/Catalog.tsx';
 import { ScenarioScheme } from './components/ScenarioScheme/ScenarioScheme.tsx';
 import { StepCard } from './components/StepCard/StepCard.tsx';
@@ -65,6 +66,8 @@ export function AppShell() {
       {modal?.kind === 'import' && <ImportModal />}
       {/* Подтверждение удаления «моего» A5.2 (§4.2:255): его открывает корзина каталога. */}
       {modal?.kind === 'delete' && <DeleteDialog scenarioId={modal.scenarioId} />}
+      {/* Перенос «моего» в общие A5.3 (§4.2:255): его открывает иконка переноса каталога. */}
+      {modal?.kind === 'export' && <ExportDialog scenarioId={modal.scenarioId} />}
       {/* restartKey={seq}: повтор того же текста перезапускает отсчёт; key не ставить — пересоздаст живой регион role="status". */}
       <Toast
         restartKey={toast?.seq}

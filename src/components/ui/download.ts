@@ -1,12 +1,15 @@
 // Скачивание файла из браузера: ссылка «Скачать шаблон» в окне загрузки
-// (SPEC §4.8:331) и в пустых «Моих» (§4.2:255, DN-24). По §6:368 шаблон
-// собирается в браузере при клике. Но src/excel/template.ts работает без DOM
-// (CLAUDE.md: src/excel/* — чистые функции), поэтому он отдаёт только байты
-// книги. В файл их превращает этот модуль: Blob плюс временная ссылка
-// <a download>. SheetJS writeFile здесь не нужен.
+// (SPEC §4.8:331) и в пустых «Моих» (§4.2:255, DN-24); «Скачать .xlsx» окна
+// «Перенести в общие» A5.3 (§4.2:255, DN-rmz). По §6:368 книги собираются в
+// браузере при клике. Но src/excel/* работает без DOM (CLAUDE.md:
+// src/excel/* — чистые функции), поэтому он отдаёт только байты книги. В файл
+// их превращает этот модуль: Blob плюс временная ссылка <a download>.
+// SheetJS writeFile здесь не нужен.
 //
 // В iframe без allow-downloads браузер скачивание молча заблокирует (§7:381).
 // Изнутри страницы этого не видно и не исправить.
+import { buildScenarioBytes, exportFileName } from '../../excel/export.ts';
+import type { Scenario } from '../../model/schema.ts';
 import { buildTemplate, TEMPLATE_FILE_NAME } from '../../excel/template.ts';
 
 /** MIME-тип книги .xlsx. */
@@ -39,4 +42,13 @@ export function downloadBytes(bytes: Uint8Array, fileName: string, type: string)
  */
 export async function downloadTemplate(): Promise<void> {
   downloadBytes(await buildTemplate(), TEMPLATE_FILE_NAME, XLSX_MIME_TYPE);
+}
+
+/**
+ * Собирает книгу «моего» сценария для `scenarios/` и скачивает её под именем
+ * будущего id (§4.2:255, A5.3). Если SheetJS не загрузился, промис
+ * отклоняется; что показать пользователю в этом случае, решает вызывающий.
+ */
+export async function downloadMine(scenario: Scenario): Promise<void> {
+  downloadBytes(await buildScenarioBytes(scenario), exportFileName(scenario), XLSX_MIME_TYPE);
 }

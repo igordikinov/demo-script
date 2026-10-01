@@ -603,8 +603,8 @@
   --dn-catalog-steps-col-width: 92px;
   --dn-catalog-link-col-width: 124px;
   --dn-catalog-date-col-width: 144px;
-  /* Колонка действия (§4.2:252): 8 + 32 (корзина) + 8 */
-  --dn-catalog-action-col-width: 48px;
+  /* Колонка действия (§4.2:252): 8 + 32 (перенос) + 8 + 32 (корзина) + 8 */
+  --dn-catalog-action-col-width: 88px;
   /* Заголовки колонок (CAT:46 padding: 10px 20px) */
   --dn-catalog-th-padding: 10px var(--scp-spacing-xl);
   /* Имя файла под названием (CAT:56 margin-top: 2px) */

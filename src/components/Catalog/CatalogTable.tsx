@@ -10,11 +10,12 @@
 // - мышь — обработчик клика на <tr>, клик по любой ячейке. Кнопку не растягиваем
 //   на всю строку псевдоэлементом: тогда клик по ячейке «Шагов» формально попадает
 //   в чужую ячейку, и Playwright (e2e/catalog.spec.ts) такой клик не выполняет.
-// Кнопка и корзина останавливают всплытие: клик по кнопке не открывает дважды, клик
-// по корзине не открывает вовсе (§4.2:255). Интерактивное в интерактивное не вложено.
+// Кнопка, перенос и корзина останавливают всплытие: клик по кнопке не открывает
+// дважды, клики по переносу и корзине не открывают вовсе (§4.2:255).
+// Интерактивное в интерактивное не вложено.
 //
 // Фокус строки выглядит как hover — фон, акцент и шеврон (Catalog.module.css).
-// Шеврон — только у общих: у «моих» колонку действия занимает корзина.
+// Шеврон — только у общих: у «моих» колонку действия занимают перенос и корзина.
 import { useId } from 'react';
 import type { MouseEvent } from 'react';
 import { ru } from '../../i18n/ru.ts';
@@ -22,7 +23,7 @@ import { formatScenarioDate } from '../../i18n/date.ts';
 import type { ScenarioIndexItem } from '../../model/scenarioIndex.ts';
 import { Badge } from '../ui/Badge.tsx';
 import { Button } from '../ui/Button.tsx';
-import { ChevronRightIcon, TrashIcon } from '../ui/icons.tsx';
+import { ChevronRightIcon, DownloadIcon, TrashIcon } from '../ui/icons.tsx';
 import styles from './Catalog.module.css';
 
 /** Три строки-скелета, пока грузится индекс «Общих» (§4.2:256). */
@@ -39,6 +40,8 @@ export interface CatalogTableProps {
   onOpen(id: string): void;
   /** Есть — в колонке действия корзина (§4.2:255), нет — шеврон. */
   onDelete?(id: string): void;
+  /** Есть — рядом с корзиной иконка «Перенести в общие» (§4.2:255, A5.3). */
+  onExport?(id: string): void;
   /** Вместо строк — скелеты (§4.2:256). */
   loading?: boolean;
 }
@@ -50,6 +53,7 @@ export function CatalogTable({
   now,
   onOpen,
   onDelete,
+  onExport,
   loading = false,
 }: CatalogTableProps) {
   const { columns } = ru.catalog;
@@ -80,7 +84,14 @@ export function CatalogTable({
         {loading
           ? Array.from({ length: SKELETON_ROWS }, (_, index) => <SkeletonRow key={index} />)
           : rows.map((item) => (
-              <CatalogRow key={item.id} item={item} now={now} onOpen={onOpen} onDelete={onDelete} />
+              <CatalogRow
+                key={item.id}
+                item={item}
+                now={now}
+                onOpen={onOpen}
+                onDelete={onDelete}
+                onExport={onExport}
+              />
             ))}
       </tbody>
     </table>
@@ -92,9 +103,10 @@ interface CatalogRowProps {
   now: Date;
   onOpen(id: string): void;
   onDelete?(id: string): void;
+  onExport?(id: string): void;
 }
 
-function CatalogRow({ item, now, onOpen, onDelete }: CatalogRowProps) {
+function CatalogRow({ item, now, onOpen, onDelete, onExport }: CatalogRowProps) {
   // Корзина описывается названием строки: «Удалить из браузера» — какой сценарий.
   const titleId = useId();
   const open = (event: MouseEvent) => {
@@ -124,19 +136,36 @@ function CatalogRow({ item, now, onOpen, onDelete }: CatalogRowProps) {
         {onDelete === undefined ? (
           <ChevronRightIcon className={styles.chevron} />
         ) : (
-          <Button
-            variant="ghost-destructive"
-            size="sm"
-            iconOnly
-            icon={<TrashIcon />}
-            aria-label={ru.catalog.deleteFromBrowser}
-            title={ru.catalog.deleteFromBrowser}
-            aria-describedby={titleId}
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete(item.id);
-            }}
-          />
+          <span className={styles.actions}>
+            {onExport !== undefined && (
+              <Button
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon={<DownloadIcon />}
+                aria-label={ru.catalog.exportToShared}
+                title={ru.catalog.exportToShared}
+                aria-describedby={titleId}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onExport(item.id);
+                }}
+              />
+            )}
+            <Button
+              variant="ghost-destructive"
+              size="sm"
+              iconOnly
+              icon={<TrashIcon />}
+              aria-label={ru.catalog.deleteFromBrowser}
+              title={ru.catalog.deleteFromBrowser}
+              aria-describedby={titleId}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(item.id);
+              }}
+            />
+          </span>
         )}
       </td>
     </tr>

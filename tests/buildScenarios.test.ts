@@ -26,12 +26,13 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildScenarioBytes, exportFileName } from '../src/excel/export';
 import { readWorkbook } from '../src/excel/read';
 import { scenarioSheets } from '../src/excel/template';
 import type { ReportLevel } from '../src/excel/validate';
 import { writeWorkbook } from '../src/excel/write';
 import { ru } from '../src/i18n/ru';
-import { ScenarioSchema, type Step } from '../src/model/schema';
+import { ScenarioSchema, type Scenario, type Step } from '../src/model/schema';
 import {
   buildScenarioIndex,
   latestLoadedAt,
@@ -476,6 +477,58 @@ describe('L2: --in по умолчанию (настоящая scenarios/), load
       const index = JSON.parse(readFileSync(join(outDir, 'index.json'), 'utf8')) as ScenarioIndex;
       const item = index.items.find((i: ScenarioIndexItem) => i.id === 'deployment-demo');
       expect(item?.loadedAt).toBe(expectedLoadedAt);
+    },
+  );
+});
+
+describe('X1 (ТК 34, SPEC §8:430): экспортированная книга проходит сборку как общий сценарий', () => {
+  it(
+    'my-export-demo → export-demo.xlsx → код 0, index.json с id export-demo (3 блока, 29 шагов, 24 со ссылкой)',
+    { timeout: 60_000 },
+    async () => {
+      const fixtureJson = JSON.parse(
+        readFileSync(join(root, 'tests', 'fixtures', 'deployment-demo.json'), 'utf8'),
+      ) as {
+        title: string;
+        module: string;
+        map: string;
+        blocks: { title: string; steps: Record<string, unknown>[] }[];
+      };
+      const mine: Scenario = ScenarioSchema.parse({
+        schema: 1,
+        id: 'my-export-demo',
+        source: 'local',
+        title: fixtureJson.title,
+        module: fixtureJson.module,
+        map: fixtureJson.map,
+        fileName: 'Deployment_demo_v2.xlsx',
+        loadedAt: '2026-09-18T10:42:00.000Z',
+        blocks: fixtureJson.blocks.map((b, i) => ({
+          n: i + 1,
+          title: b.title,
+          sheet: `Блок ${i + 1}`,
+          steps: b.steps,
+        })),
+      });
+
+      const inDir = tmp('dn-scen-exp-');
+      // Имя файла даёт exportFileName — то, что скачивает окно A5.3 (§4.2:255).
+      put(inDir, exportFileName(mine), await buildScenarioBytes(mine));
+      const outDir = tmp('dn-scen-out-');
+
+      const result = run(['--in', inDir, '--out', outDir]);
+      expect(result.status).toBe(0);
+      expect(names(outDir)).toEqual(['export-demo.json', 'index.json']);
+
+      const index = JSON.parse(readFileSync(join(outDir, 'index.json'), 'utf8')) as ScenarioIndex;
+      expect(index.items).toHaveLength(1);
+      expect(index.items[0]).toMatchObject({
+        id: 'export-demo',
+        fileName: 'export-demo.xlsx',
+        blocks: 3,
+        steps: 29,
+        withLink: 24,
+      });
     },
   );
 });
