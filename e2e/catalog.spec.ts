@@ -175,7 +175,9 @@ test.describe('C1 — каталог с данными (ТК 26, SPEC §8:422)',
     await expect(row.locator('td').nth(3)).toHaveText('29');
     await expect(row.locator('td').nth(4)).toHaveText('24');
     await expect(row.locator('td').nth(5)).toHaveText(DATE_RE);
-    await expect(shared.locator('[data-count]')).toHaveText('1');
+    // Счётчик — число файлов в scenarios/; их два: deployment-demo и
+    // deployment-tlb (DN-rmz).
+    await expect(shared.locator('[data-count]')).toHaveText('2');
 
     const local = page.getByRole('region', { name: ru.catalog.localTitle });
     await expect(local.getByText(ru.catalog.localEmpty)).toBeVisible();
@@ -258,9 +260,11 @@ test.describe('C3 — «Мои» (SPEC §3.6:204, §4.2:255)', () => {
 
     await search.fill('DEPLOY');
     // Оба «мои» унаследовали fixture.title («Deployment — демо-сценарий»,
-    // seedMyScenarios выше) — «DEPLOY» совпадает с обоими, не с одним.
+    // seedMyScenarios выше) — «DEPLOY» совпадает с обоими, не с одним. В «Общих»
+    // сейчас два сценария на «Deployment» из scenarios/: deployment-demo и
+    // deployment-tlb (DN-rmz) — поиск находит оба.
     await expect(local.locator('tr[data-scenario-id]')).toHaveCount(2);
-    await expect(shared.locator('tr[data-scenario-id]')).toHaveCount(1);
+    await expect(shared.locator('tr[data-scenario-id]')).toHaveCount(2);
 
     await search.fill('деплой');
     await expect(local.getByText(ru.catalog.notFound)).toBeVisible();
@@ -340,10 +344,14 @@ test.describe('C5 — загрузка «Общих» (SPEC §4.2:256)', () => {
     const skeletonRow = await height('tr[data-skeleton="true"]');
 
     releaseGate();
-    await expect(shared.locator('tr[data-scenario-id]')).toHaveCount(1);
+    // Строк столько, сколько файлов в scenarios/ (deployment-demo и
+    // deployment-tlb, DN-rmz).
+    await expect(shared.locator('tr[data-scenario-id]')).toHaveCount(2);
     expect(await height(':scope > div')).toBe(headWhileLoading);
-    // У единственной строки данных нет нижней границы (design/catalog-mockup.html:48), у скелета она есть.
-    expect(Math.abs((await height('tr[data-scenario-id]')) - skeletonRow)).toBeLessThanOrEqual(1);
+    // У последней строки данных нет нижней границы (design/catalog-mockup.html:48), у скелета она есть.
+    expect(
+      Math.abs((await height('tr[data-scenario-id]:last-of-type')) - skeletonRow),
+    ).toBeLessThanOrEqual(1);
   });
 
   test('колонки не сдвигаются после загрузки и совпадают у «Общих» и «Моих» при 1024×768, дата не «сегодня» (CAT:45, §4.2:252-253)', async ({
