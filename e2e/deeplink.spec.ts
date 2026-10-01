@@ -90,7 +90,9 @@ test.describe('DL3 — ТК 30 (SPEC §8:426)', () => {
     await page.goto('/?scenario=unknown');
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
     await expect(page.getByRole('status')).toContainText(ru.deepLink.notFoundShared('unknown'));
-    expect(new URL(page.url()).search).toBe('');
+    // Тост рисуется раньше, чем эффект адреса убирает scenario (useStepDeepLink
+    // п.2) — адрес ждём поллингом, как шаг в DL2, а не мгновенным чтением.
+    await expect.poll(() => new URL(page.url()).search).toBe('');
     // На dev-сервере Vite несуществующий scenarios/unknown.json отдаётся через
     // spaFallback (index.html, статус 200), а не 404: ошибка «не удаётся
     // распарсить как JSON» ловится в StoreProvider.commands.openShared без
@@ -105,7 +107,8 @@ test.describe('DL4 — ТК 30 (SPEC §8:426)', () => {
     await page.goto('/?scenario=my-x');
     await expect(page.getByRole('heading', { level: 1, name: ru.catalog.title })).toBeVisible();
     await expect(page.getByRole('status')).toContainText(ru.deepLink.notFoundLocal('my-x'));
-    expect(new URL(page.url()).search).toBe('');
+    // Как DL3: адрес чистится эффектом после тоста — ждём поллингом.
+    await expect.poll(() => new URL(page.url()).search).toBe('');
     expect(errors).toEqual([]);
   });
 });

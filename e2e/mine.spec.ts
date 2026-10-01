@@ -187,3 +187,71 @@ test.describe('M3 — окно «Перенести в общие» A5.3 в бр
     expect(await storedLibraryIds(page)).toEqual([FIX_ID]);
   });
 });
+
+// Отправка в репозиторий — ТК 35 (SPEC §8:431). GitHub API подменяется
+// page.route: GET файла — 404 (создание), PUT — 201 с коммитом. Живой GitHub
+// здесь не нужен: последовательность запросов и base64 проверены юнитами
+// (tests/publish.test.ts), в браузере — реальный ввод токена и состояния окна.
+test.describe('M4 — отправка в репозиторий в браузере (SPEC §4.2:255, ТК 35)', () => {
+  test('токен → «Отправить в репозиторий» → PUT scenarios/<id>.xlsx в main → «Отправлено» со ссылкой; токен сохранён', async ({
+    page,
+  }) => {
+    const puts: { url: string; auth: string | null; body: Record<string, unknown> }[] = [];
+    await page.route('**/api.github.com/**', async (route) => {
+      const request = route.request();
+      if (request.method() === 'GET') {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: '{"message":"Not Found"}',
+        });
+        return;
+      }
+      const headers = await request.allHeaders();
+      puts.push({
+        url: request.url(),
+        auth: headers['authorization'] ?? null,
+        body: request.postDataJSON() as Record<string, unknown>,
+      });
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          commit: { html_url: 'https://github.com/igordikinov/demo-script/commit/e2e' },
+        }),
+      });
+    });
+
+    await seedOneMine(page, FIX_ID);
+    await page.goto('/');
+
+    const local = page.getByRole('region', { name: ru.catalog.localTitle });
+    const row = local.locator(`tr[data-scenario-id="${FIX_ID}"]`);
+    await row.getByRole('button', { name: ru.catalog.exportToShared }).click();
+
+    const dialog = page.getByRole('dialog', { name: ru.exportDialog.title });
+    await dialog.getByLabel(ru.exportDialog.tokenLabel).fill('github_pat_e2e');
+    await dialog.getByRole('button', { name: ru.exportDialog.send }).click();
+
+    await expect(dialog.getByText(ru.exportDialog.sentTitle)).toBeVisible();
+    await expect(dialog.getByText(ru.exportDialog.sentText)).toBeVisible();
+    await expect(dialog.getByRole('link', { name: ru.exportDialog.sentLink })).toHaveAttribute(
+      'href',
+      'https://github.com/igordikinov/demo-script/commit/e2e',
+    );
+
+    expect(puts).toHaveLength(1);
+    expect(puts[0]?.url).toBe(
+      'https://api.github.com/repos/igordikinov/demo-script/contents/scenarios/deployment-demo-scenariy.xlsx',
+    );
+    expect(puts[0]?.auth).toBe('Bearer github_pat_e2e');
+    expect(puts[0]?.body.branch).toBe('main');
+
+    // Первый успех запоминает токен (SPEC §4.2:255).
+    const token = await page.evaluate(
+      (key) => window.localStorage.getItem(key),
+      'demo-navigator:github-token:v1',
+    );
+    expect(token).toBe('github_pat_e2e');
+  });
+});

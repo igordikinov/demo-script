@@ -31,7 +31,7 @@ import { appReducer, createInitialState, flatSteps } from '../src/state/reducer'
 import { ScenarioSchema, type Scenario, type Step } from '../src/model/schema';
 import { ru } from '../src/i18n/ru';
 import { ScenarioScheme } from '../src/components/ScenarioScheme/ScenarioScheme';
-// Контракт скрытой подсказки (SPEC §4.3:267, §11:624, план DN-36l) — класс
+// Контракт скрытой подсказки (SPEC §4.3:267, §11:625, план DN-36l) — класс
 // visuallyHidden, тот же, что проверяет tests/VisuallyHidden.test.tsx.
 import hiddenStyles from '../src/components/ui/VisuallyHidden.module.css';
 import fixtureJson from './fixtures/deployment-demo.json';
@@ -255,14 +255,14 @@ describe('ScenarioScheme: список шагов (SPEC §4.3:265)', () => {
     expect(button.querySelector('svg[data-icon="external-link"]')).toBeNull();
     expect(button).not.toHaveAttribute('data-link');
     expect(container.querySelectorAll('svg[data-icon="external-link"]')).toHaveLength(23);
-    // «Испорченный» url — тоже «нет ссылки» для скрытой подсказки (§11:624):
+    // «Испорченный» url — тоже «нет ссылки» для скрытой подсказки (§11:625):
     // у 1.10 её нет, а на всю схему остаётся 23 подсказки вместо 24.
     expect(button.textContent).not.toContain(ru.scheme.linkHint);
     expect(screen.getAllByText(ru.scheme.linkHint)).toHaveLength(23);
   });
 });
 
-describe('ScenarioScheme: скрытая подпись ссылки (SPEC §4.3:267, §11:624)', () => {
+describe('ScenarioScheme: скрытая подпись ссылки (SPEC §4.3:267, §11:625)', () => {
   it('доступное имя содержит ru.scheme.linkHint ровно у 24 кнопок — у шагов из stepsWithLink, и только у них', () => {
     renderScheme();
     const namesWithHint = new Map<string, string>();

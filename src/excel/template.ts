@@ -10,7 +10,7 @@
 //
 // Модуль отдаёт байты и имя файла. SPEC говорит «writeFile», но скачивание —
 // это DOM (Blob), а src/excel/* живёт без него: скачивает UI (DN-14, DN-24).
-// Закрепление строки 2 — freezeRows в write.ts (решение DN-akk, §11:623).
+// Закрепление строки 2 — freezeRows в write.ts (решение DN-akk, §11:624).
 // Без React, DOM и node:*: модуль импортирует Node (--experimental-strip-types).
 import { ru } from '../i18n/ru.ts';
 import type { Scenario, Step } from '../model/schema.ts';

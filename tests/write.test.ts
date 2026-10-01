@@ -150,7 +150,7 @@ describe('writeWorkbook', () => {
   );
 });
 
-// SPEC §6:371, §11:623 (решение DN-akk): SheetJS Community Edition не пишет
+// SPEC §6:371, §11:624 (решение DN-akk): SheetJS Community Edition не пишет
 // <pane> в XML листа — freezeRows дописывает эту строку после X.write через
 // встроенный в SheetJS CFB. Хелперы zipText/sheetXml разбирают zip средствами
 // CFB.read/CFB.find; тот же хелпер дословно повторён в tests/template.test.ts

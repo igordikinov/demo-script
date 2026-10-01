@@ -1,7 +1,7 @@
 /*
- * Окно «Перенести в общие» A5.3 — SPEC §4.2:255. Тело окна — три абзаца
- * (третья показывается при совпадении имени с существующим общим); в макете
- * его нет — отступ между абзацами как между строками сообщений каталога.
+ * Окно «Перенести в общие» A5.3 — SPEC §4.2:255. Тело окна — абзацы,
+ * блок токена и строка ошибки (в макете его нет — отступы как между
+ * строками сообщений каталога). Только var(--…) из tokens.css.
  */
 
 .paragraph {
@@ -10,4 +10,66 @@
 
 .paragraph + .paragraph {
   margin-top: var(--scp-spacing-md);
+}
+
+/* Поле токена: подпись, поле ввода и подсказка со ссылками. */
+.tokenBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--scp-spacing-xs);
+  margin-top: var(--scp-spacing-lg);
+}
+
+.tokenLabel {
+  font: var(--scp-xs-semibold), sans-serif;
+  color: var(--scp-color-neutral-600);
+}
+
+.tokenInput {
+  height: var(--scp-btn-height-md);
+  padding: 0 var(--scp-spacing-md);
+  border: 1px solid var(--scp-color-neutral-200);
+  border-radius: var(--scp-border-radius-md);
+  font: var(--scp-font-body-m), sans-serif;
+  color: var(--scp-content-primary);
+}
+
+.tokenInput:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 2px;
+}
+
+.tokenHint {
+  margin: 0;
+  font: var(--scp-font-body-s), sans-serif;
+  color: var(--scp-color-neutral-500);
+}
+
+/* Ссылки окна: коммит, «Создать на GitHub», «Забыть токен», «Скачать вручную». */
+.link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--scp-font-sizes-12);
+  color: var(--scp-color-brand-700);
+  text-decoration: underline;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+a.link:hover,
+button.link:hover {
+  color: var(--scp-color-brand-800);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 2px;
+}
+
+/* Отказ публикации — строка с ролью alert (§5: danger-текст). */
+.error {
+  margin: var(--scp-spacing-md) 0 0;
+  color: var(--scp-color-error-700);
 }
