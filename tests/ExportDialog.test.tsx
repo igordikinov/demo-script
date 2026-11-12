@@ -166,6 +166,17 @@ describe('ExportDialog — SPEC §4.2:255 (A5.3), ТК 34', () => {
     expect(screen.getByRole('dialog', { name: ru.exportDialog.title })).toBeInTheDocument();
   });
 
+  it('«Положить на GitHub» — ссылка на страницу загрузки файлов в scenarios/ (ручной путь без токена)', () => {
+    renderDialog();
+
+    const upload = screen.getByRole('link', { name: ru.exportDialog.uploadManual });
+    expect(upload).toHaveAttribute(
+      'href',
+      'https://github.com/igordikinov/demo-script/upload/main/scenarios/',
+    );
+    expect(upload).toHaveAttribute('target', '_blank');
+  });
+
   it('неизвестный scenarioId — окно не рендерится', () => {
     renderDialog({ scenarioId: 'my-unknown' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

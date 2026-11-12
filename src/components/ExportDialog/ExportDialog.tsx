@@ -18,7 +18,7 @@
 import { useCallback, useId, useState } from 'react';
 import { ru } from '../../i18n/ru.ts';
 import { exportFileName, exportScenarioId } from '../../excel/export.ts';
-import { GH_TOKEN_CREATE_URL, publishScenario } from '../../gh/publish.ts';
+import { GH_TOKEN_CREATE_URL, GH_UPLOAD_URL, publishScenario } from '../../gh/publish.ts';
 import { useAppStore } from '../../state/context.ts';
 import { findInLibrary, getBrowserStorage } from '../../state/library.ts';
 import { clearGhToken, readGhToken, writeGhToken } from '../../state/ghToken.ts';
@@ -189,7 +189,10 @@ export function ExportDialog({ scenarioId }: ExportDialogProps) {
               {errorText}
             </p>
           )}
-          <p className={styles.paragraph}>
+          {/* Ручной путь без токена: скачать готовый файл и положить его на
+              GitHub — вкладка загрузки открывается сразу в scenarios/. */}
+          <p className={styles.tokenHint}>
+            {ru.exportDialog.manual}:{' '}
             <button
               type="button"
               className={styles.link}
@@ -199,6 +202,10 @@ export function ExportDialog({ scenarioId }: ExportDialogProps) {
             >
               {ru.exportDialog.downloadManual}
             </button>
+            {' · '}
+            <a className={styles.link} href={GH_UPLOAD_URL} target="_blank" rel="noreferrer">
+              {ru.exportDialog.uploadManual}
+            </a>
           </p>
         </>
       )}

@@ -21,6 +21,12 @@ export const GH_API = 'https://api.github.com';
 /** Страница создания fine-grained токена (кнопка-ссылка окна A5.3). */
 export const GH_TOKEN_CREATE_URL = 'https://github.com/settings/personal-access-tokens/new';
 
+/**
+ * Страница загрузки файлов в scenarios/ ветки main (ссылка «Положить на GitHub»):
+ * ручной путь без токена — перетащить скачанный .xlsx и закоммитить.
+ */
+export const GH_UPLOAD_URL = `https://github.com/${GH_OWNER}/${GH_REPO}/upload/${GH_BRANCH}/scenarios/`;
+
 /** fetch с методом и телом: FetchFn из state/shared.ts иници не передаёт. */
 export type GhFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
