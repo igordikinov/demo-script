@@ -287,7 +287,9 @@ describe('T2 (ТК 25): danger в одном файле останавливае
 });
 
 describe('T3 (ТК 25): запрещённое имя файла роняет всю сборку', () => {
-  it.each(['Demo 1.xlsx', 'my-x.xlsx'])('%s → код 1, out пуст', (name) => {
+  // Как T1/T2/T4: это отдельный процесс Node с чтением книг, а не
+  // проверка скорости разбора (её лимит остаётся в tests/perf.test.ts).
+  it.each(['Demo 1.xlsx', 'my-x.xlsx'])('%s → код 1, out пуст', { timeout: 60_000 }, (name) => {
     const inDir = tmp('dn-scen-in-');
     put(inDir, 'deployment-demo.xlsx', DEMO);
     put(inDir, name, DEMO);

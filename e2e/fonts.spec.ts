@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
 // отрисовки текста. Этот тест проверяет сеть и document.fonts напрямую,
 // независимо от того, есть ли уже видимый текст на странице (план DN-02,
 // правка 10 — «итог e2e меняется с «1 passed» на «2 passed»»).
-test('шрифт Open Sans грузится локально, без сетевых запросов на сторону', async ({
+test('шрифт Manrope грузится локально, без сетевых запросов на сторону', async ({
   page,
   baseURL,
 }) => {
@@ -27,17 +27,14 @@ test('шрифт Open Sans грузится локально, без сетев�
 
   await page.goto('/');
 
-  for (const weight of [400, 600, 700]) {
-    await page.evaluate(
-      (w: number) => document.fonts.load(`${w} 14px "Open Sans"`, 'Жж Aa'),
-      weight,
-    );
+  for (const weight of [400, 500, 600, 700, 800]) {
+    await page.evaluate((w: number) => document.fonts.load(`${w} 14px "Manrope"`, 'Жж Aa'), weight);
   }
 
   const loadedWeights = await page.evaluate(() => {
     const weights = new Set<string>();
     for (const face of Array.from(document.fonts)) {
-      if (face.family.replace(/['"]/g, '') === 'Open Sans' && face.status === 'loaded') {
+      if (face.family.replace(/['"]/g, '') === 'Manrope' && face.status === 'loaded') {
         weights.add(face.weight);
       }
     }
@@ -46,7 +43,8 @@ test('шрифт Open Sans грузится локально, без сетев�
 
   expect(externalRequests).toEqual([]);
   expect(consoleErrors).toEqual([]);
-  for (const weight of ['400', '600', '700']) {
+  for (const weight of ['400', '500', '600', '700', '800']) {
     expect(loadedWeights).toContain(weight);
   }
+  await expect(page.locator('body')).toHaveCSS('font-family', /^["']?Manrope\b/);
 });

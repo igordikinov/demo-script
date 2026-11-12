@@ -4,7 +4,7 @@
 
 - Требования — [PRD.md](PRD.md), техническая спецификация — [SPEC.md](SPEC.md) (главнее PRD).
 - Правила разработки, beads и субагенты — [CLAUDE.md](CLAUDE.md), SPEC §10.
-- Макет — `design/` (Claude Design, только чтение).
+- Макет — `design/` (Claude Design, только чтение). Цвета и шрифт обновлены по `frontend-brand.tgz`: Manrope и синий акцент; источник и адаптация — [docs/frontend-brand.md](docs/frontend-brand.md).
 - Общие сценарии — папка `scenarios/`; первый — `scenarios/deployment-demo.xlsx`. Имя файла латиницей через дефис — это id сценария в ссылке `?scenario=`. Перенести «мой» сценарий в общие — иконка в строке каталога: окно само закоммитит `.xlsx` в `scenarios/` через GitHub API. Нужен fine-grained PAT («Contents: Read and write», только этот репозиторий) — вставляется в окне один раз и хранится в браузере; без токена — «Скачать .xlsx вручную» и «Положить на GitHub» (страница загрузки файлов в `scenarios/`).
 - Файлы в `scenarios/` публикуются вместе с приложением — без имён заказчиков.
 

@@ -43,12 +43,12 @@ describe('build', () => {
     expect(source).not.toMatch(/(?:src|href)="\/(?!\/)/);
   });
 
-  it('шрифт Open Sans зашит в бандл: ровно 9 .woff2 в assets (SPEC §5:358)', () => {
+  it('Manrope из фирменного архива зашит в бандл: 10 .woff2 (SPEC §5)', () => {
     const fonts = outputs.filter(
       (item): item is Rollup.OutputAsset =>
-        item.type === 'asset' && /^assets\/open-sans-.*\.woff2$/.test(item.fileName),
+        item.type === 'asset' && /^assets\/manrope-.*\.woff2$/.test(item.fileName),
     );
-    expect(fonts).toHaveLength(9);
+    expect(fonts).toHaveLength(10);
   });
 
   it('CSS-бандл не ссылается на Google Fonts и не использует абсолютные url()', () => {

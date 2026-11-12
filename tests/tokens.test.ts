@@ -72,25 +72,25 @@ function readAppTokens(): string {
 
 /** §5:360 — используемые значения (сверка с макетом). Хардкод только здесь, в тесте. */
 const SPEC_5_VALUES: [token: string, value: string][] = [
-  ['--scp-bg-canvas', '#F5F6F8'],
+  ['--scp-bg-canvas', '#F4F6FA'],
   ['--scp-color-neutral-100', '#EAEAEA'],
-  ['--scp-content-primary', '#212529'],
+  ['--scp-content-primary', '#04143A'],
   ['--scp-color-neutral-600', '#77787A'],
   ['--scp-color-neutral-500', '#949598'],
-  ['--scp-color-brand-700', '#9000FF'],
-  ['--scp-color-brand-800', '#6F00CE'],
-  ['--scp-color-brand-50', '#FAF3FF'],
-  ['--scp-color-brand-100', '#F4E3FF'],
-  ['--scp-color-brand-200', '#EACDFF'],
-  ['--scp-system-error-background', '#FFD6DB'],
-  ['--scp-color-error-700', '#B81D1D'],
-  ['--scp-system-warning-background', '#FCF0D4'],
-  ['--scp-color-warning-800', '#9D380F'],
-  ['--scp-color-neutral-50', '#F5F6F8'],
+  ['--scp-color-brand-700', '#4769FF'],
+  ['--scp-color-brand-800', '#0C1F4F'],
+  ['--scp-color-brand-50', '#E3E9FF'],
+  ['--scp-color-brand-100', '#E3E9FF'],
+  ['--scp-color-brand-200', '#C2CFFF'],
+  ['--scp-system-error-background', '#FDE4EC'],
+  ['--scp-color-error-700', '#C4002A'],
+  ['--scp-system-warning-background', '#FFF1DC'],
+  ['--scp-color-warning-800', '#A35A00'],
+  ['--scp-color-neutral-50', '#F4F6FA'],
   ['--scp-color-neutral-700', '#5A5A5C'],
   ['--scp-radius-button', '4px'],
   ['--scp-radius-modal', '8px'],
-  ['--scp-xs-semibold', "600 12px/16px 'open sans'"],
+  ['--scp-xs-semibold', "600 12px/16px 'Manrope', 'Open Sans'"],
   ['--dn-tracking-caption', '.04em'],
 ];
 
@@ -118,9 +118,11 @@ const DN_TOKENS: [token: string, value: string][] = [
 ];
 
 describe('tokens.css', () => {
-  it('переносит все объявления colors/typography/spacing/components из design/_ds с тем же значением', () => {
+  it('сохраняет исходные SCP-токены в базовом слое перед фирменными переопределениями', () => {
     const source = readSourceTokens();
-    const app = parseTokens(readAppTokens());
+    const css = readAppTokens();
+    expect(css).toContain(':root:root');
+    const app = parseTokens(css.split(':root:root')[0] ?? '');
     const diffs: string[] = [];
     for (const [name, sourceValue] of source) {
       const appValue = app.get(name);

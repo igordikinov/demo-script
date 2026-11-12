@@ -225,7 +225,7 @@ test.describe('C2 — Enter и фокус строки (SPEC §4.2:254)', () => 
     });
     expect(computed.boxShadow).toContain('inset');
     expect(computed.boxShadow).toContain('3px');
-    expect(computed.background).toBe('rgb(250, 243, 255)');
+    expect(computed.background).toBe('rgb(227, 233, 255)');
     await expect(row.locator('svg[data-icon="chevron-right"]')).toBeVisible();
 
     await page.keyboard.press('Enter');

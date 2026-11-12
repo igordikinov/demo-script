@@ -66,17 +66,17 @@ describe('src/**/*.css — цвета только через токены', () 
       expect(css).not.toMatch(/@import/i);
     });
 
-    it('содержит ровно 9 @font-face с font-display: swap (400/600/700 × 3 подсета)', () => {
+    it('содержит 10 локальных Manrope @font-face с font-display: swap (400–800 × 2 подсета)', () => {
       const css = fontsCss();
       const faces = css.match(/@font-face/g) ?? [];
       const swaps = css.match(/font-display:\s*swap/g) ?? [];
-      expect(faces).toHaveLength(9);
-      expect(swaps).toHaveLength(9);
+      expect(faces).toHaveLength(10);
+      expect(swaps).toHaveLength(10);
     });
 
     it.each(
-      ['latin', 'cyrillic', 'cyrillic-ext'].flatMap((subset) =>
-        [400, 600, 700].map((weight) => `open-sans-${subset}-${weight}-normal.woff2`),
+      ['latin', 'cyrillic'].flatMap((subset) =>
+        [400, 500, 600, 700, 800].map((weight) => `manrope-${subset}-${weight}-normal.woff2`),
       ),
     )('ссылается на файл %s', (fileName) => {
       expect(fontsCss()).toContain(fileName);
